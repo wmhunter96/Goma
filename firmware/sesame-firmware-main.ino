@@ -32,12 +32,12 @@
 //#define I2C_SCL 9
 
 // I2C Pins for Distro Board V1
-//#define I2C_SDA 21
-//#define I2C_SCL 22
+#define I2C_SDA 21
+#define I2C_SCL 22
 
 // I2C Pins for S2 Mini Board
-#define I2C_SDA 33
-#define I2C_SCL 35
+//#define I2C_SDA 33
+//#define I2C_SCL 35
 
 
 // DNS Server for Captive Portal
@@ -104,10 +104,10 @@ Servo servos[8];
 //const int servoPins[8] = {4, 5, 6, 7, 15, 16, 17, 18};
 
 // Sesame Distro Board V1 Pinout (Legacy)
-//const int servoPins[8] = {15, 2, 23, 19, 4, 16, 17, 18};
+const int servoPins[8] = {15, 2, 23, 19, 4, 16, 17, 18};
 
 // Lolin S2 Mini Pinout
-const int servoPins[8] = {1, 2, 4, 6, 8, 10, 13, 14};
+//const int servoPins[8] = {1, 2, 4, 6, 8, 10, 13, 14};
 
 // Subtrim values for each servo (offset in degrees)
 int8_t servoSubtrim[8] = {0, 0, 0, 0, 0, 0, 0, 0};
