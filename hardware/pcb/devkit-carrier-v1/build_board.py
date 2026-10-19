@@ -112,10 +112,13 @@ place("J3", "Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical", (XO
       "OLED", {1: "SCL", 2: "SDA", 3: "+3V3", 4: "GND"}, show_ref=False)
 
 # Pololu D24V50F5 on a 5-pin header along its bottom edge: EN VIN GND GND OUT (EN unconnected, pulled up on the module)
-U_X0, U_Y0 = 47.0, 1.0                     # module outline top-left (17.8 x 20.3 mm)
-UY = U_Y0 + 20.3 - 1.3                     # pin row
+# Dimensions from Pololu's drawing (pololu.com/file/0J1436): 17.8 x 20.3 mm board, pin row 1.27 mm above the
+# bottom edge, OUT pin 1.91 mm in from the right edge (so EN is 5.73 mm from the left), mounting holes at (2.2, 2.2)
+# and (15.7, 18.2) mm from the bottom-left corner.
+U_X0, U_Y0 = 47.0, 1.0                     # module outline top-left
+UY = U_Y0 + 20.3 - 1.27                    # pin row
 def ux(n):
-    return U_X0 + 6.1 + PITCH * (n - 1)
+    return U_X0 + 17.8 - 1.91 - PITCH * (5 - n)
 place("U1", "Connector_PinHeader_2.54mm", "PinHeader_1x05_P2.54mm_Vertical", (ux(1), UY), (1, 0),
       "Pololu D24V50F5", {1: None, 2: "VBAT_SW", 3: "GND", 4: "GND", 5: "+5V"}, show_ref=False)
 
@@ -267,6 +270,14 @@ for x, s in zip(XO, ["C", "D", "V", "G"]):
 text("OLED", (XO[0] + XO[3]) / 2, YL - 2.2, 0.8)
 # Regulator module outline + pin labels
 rect(U_X0, U_Y0, U_X0 + 17.8, U_Y0 + 20.3, SILK, 0.15)
+for hx, hy in [(2.2, 2.2), (15.7, 18.2)]:   # module's own mounting holes (not used), for reference
+    c = pcbnew.PCB_SHAPE(board)
+    c.SetShape(pcbnew.SHAPE_T_CIRCLE)
+    c.SetCenter(P(U_X0 + hx, U_Y0 + 20.3 - hy))
+    c.SetEnd(P(U_X0 + hx + 1.09, U_Y0 + 20.3 - hy))
+    c.SetWidth(FromMM(0.12))
+    c.SetLayer(SILK)
+    board.Add(c)
 text("Pololu", U_X0 + 8.9, 7.0, 0.9)
 text("D24V50F5", U_X0 + 8.9, 9.0, 0.9)
 text("5V 5A", U_X0 + 8.9, 11.0, 0.9)
