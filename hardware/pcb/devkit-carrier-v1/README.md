@@ -14,18 +14,19 @@ Replaces hand wiring: 3S battery in (solder pads for a pigtail), onboard 5V/5A r
 ## Layout
 
 ```
- ┌────────────────────────────────────────────────────────────────────────────┐
- │ IO: 5V G 13 · 14 27 26 25 33 32   OLED: D C V G   ◯                        │
- │┌──────────────────────────────────────────────┐   ┌──────────────────────┐ │
- ││ ESP32 DevKit (plugs into two 1×15 sockets)   │ANT│ Pololu D24V50F5      │ │
- ││<- USB          battery divider underneath    │   └──────────────────────┘ │
- │└──────────────────────────────────────────────┘ ◯   (C1)               ◯   │
- │   S ▪▪▪▪▪ ▪▪ ▪   servo headers, each under                       BAT+ ■   │
- │   + ▪▪▪▪▪ ▪▪ ▪   the DevKit pin that drives it   SW ● ●               │
- │ ◯ - ▪▪▪▪▪ ▪▪ ▪                                                   BAT- ●   │
- │    R1 R2 R4 R3 L3 L4 L2  L1                                                │
- └────────────────────────────────────────────────────────────────────────────┘
+ ┌──────────────────────────────────────────────────────────────────────────────┐
+ │ IO: 5V G 13 · 14 27 26 25 33 32   OLED: D C V G        ◯   ┌──────────────┐  │
+ │┌──────────────────────────────────────────┬──────┐          │ Pololu       │  │
+ ││ ESP32 DevKit (plugs into two 1×15 sockets)│ ANT  │  keep    │ D24V50F5     │  │
+ ││<- USB          battery divider underneath │[slot]│  clear   │EN VIN G G OUT│  │
+ │└──────────────────────────────────────────┴──────┘          └──────────────┘  │
+ │   S ▪▪▪▪▪ ▪▪ ▪   servo headers, each under                  (C1)     BAT+ ■    │
+ │   + ▪▪▪▪▪ ▪▪ ▪   the DevKit pin that drives it                       BAT- ●    │
+ │ ◯ - ▪▪▪▪▪ ▪▪ ▪                                   ◯           SW ● ●       ◯    │
+ └──────────────────────────────────────────────────────────────────────────────┘
 ```
+
+The ESP32's antenna sits over a slot cut through the board, with no copper, parts or mounting holes within ~8 mm of it, per Espressif's antenna-placement guidance. Keep metal (screws, battery, wires) away from that end of the DevKit in the body design too.
 
 ## Ordering (PCBWay)
 
@@ -46,7 +47,7 @@ Upload `sesame-devkit-carrier-gerbers.zip`. Settings: 2 layers, 80 × 42 mm, 1.6
 | R1 | 100 kΩ ¼ W (1% preferred) | 1 | Battery divider top |
 | R2 | 22 kΩ ¼ W (1% preferred) | 1 | Battery divider bottom |
 | C2 | 100 nF ceramic, 5 mm pitch | 1 | Sense filter |
-| H1–H4 | M2.5 screws / standoffs | 4 | Nylon screws or washers recommended near traces |
+| H1–H4 | M2.5 screws / standoffs | 4 | Nylon screws recommended (they sit near traces and the antenna end) |
 
 Solder R1, R2 and C2 **before** the DevKit sockets; they sit underneath the DevKit and must stay under ~7 mm tall.
 
@@ -82,6 +83,6 @@ float batteryVolts() {
 
 ## Notes
 
-- No copper under the ESP32 antenna (keep-out zone at the DevKit's right end), to keep Wi-Fi range.
+- Antenna: board slot under it plus a copper keep-out from x = 43 to 59 mm, to keep Wi-Fi range.
 - The DevKit's own micro-USB is used for flashing; there's deliberately no second USB-serial chip on the carrier.
 - There's no schematic file; `build_board.py` is the source of truth for every connection.
