@@ -182,6 +182,7 @@ for name, sig, k in SERVOS:
     track([(kx(k), YR), (kx(k), YS)], sig, SIG_W)
 # +5V rail through the servo + pins
 track([(kx(1), Y5), (kx(13), Y5)], "+5V", 2.0)
+track([(kx(1), Y5), (kx(13), Y5)], "+5V", 2.0, B)   # doubled on the back for peak servo current
 # Regulator OUT -> servo rail and DevKit VIN on the bottom layer; bulk cap tees in
 XF = 45.0
 track([(ux(5), UY), (ux(5), 22.3), (XF, 22.3), (XF, Y5), (kx(13), Y5)], "+5V", 2.0, B)
@@ -190,8 +191,8 @@ track([C1P, (C1P[0], 22.3)], "+5V", 1.2, B)
 track([(kx(15), YL), (kx(15), YBOT)], "+5V", 0.8)
 
 # Battery: pigtail + -> switch -> regulator VIN
-track([BATP, (60.0, BATP[1]), (60.0, 37.7), (58.9, SW1[1]), SW1], "VBAT", 1.2)
-track([SW2, (56.5, 34.3), (56.5, 22.5), (ux(2), 22.5), (ux(2), UY)], "VBAT_SW", 1.0)
+track([BATP, (60.0, BATP[1]), (60.0, 37.7), (58.9, SW1[1]), SW1], "VBAT", 1.5)
+track([SW2, (56.5, 34.3), (56.5, 22.5), (ux(2), 22.5), (ux(2), UY)], "VBAT_SW", 1.5)
 
 # Battery sense: switched battery along the bottom edge (bottom layer), up between socket pins to R1;
 # divider node over to GPIO34 on top
