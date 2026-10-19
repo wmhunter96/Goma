@@ -269,5 +269,14 @@ for h in [f for f in board.GetFootprints() if f.GetReference().startswith("H")]:
     margin = min(hx - ox0, ox1 - hx, hy - oy0, oy1 - hy) - head
     check(margin >= 0.5, f"{h.GetReference()} socket-head screw (r {head} mm) stays {margin:.2f} mm inside the board edge")
 
+
+# ---------------------------------------------------------------- 14. signal traces: 0.5 mm, necked to 0.3 mm only between pins
+sig = [t for t in board.GetTracks() if t.GetClass() == "PCB_TRACK" and t.GetNetname() not in ("+5V", "GND", "VBAT")
+       and not (t.GetNetname() == "VBAT_SW" and mm(t.GetWidth()) >= 1.0)]
+narrow = [t for t in sig if mm(t.GetWidth()) < 0.5 - 1e-6]
+neck_len = sum(mm(t.GetLength()) for t in narrow)
+check(all(mm(t.GetWidth()) >= 0.4 - 1e-6 for t in sig) and neck_len < 25,
+      f"signal traces 0.5 mm; {len(narrow)} necked segments at 0.4 mm, {neck_len:.1f} mm total, only between pin rows")
+
 print("\n".join(notes))
 print("\n".join(fails) if fails else "\nNO FAILURES")

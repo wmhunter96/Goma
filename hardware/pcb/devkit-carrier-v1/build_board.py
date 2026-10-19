@@ -229,7 +229,9 @@ def via(xy, netname, d=0.8, drill=0.4):
     v.SetNet(net(netname))
     board.Add(v)
 
-SIG_W = 0.3
+SIG_W = 0.5     # signal traces: well above the 0.1 mm fab minimum, tolerant of etch variation and rework
+NECK_W = 0.4    # only where a trace threads between 2.54 mm socket/header pins (0.84 mm gap -> 0.22 mm each side)
+NECK_Y = 35.9   # traces narrow below this line to pass between the DevKit's bottom socket row and the I/O headers
 
 # Servo signals: straight up from the DevKit pin
 for name, sig, k in SERVOS:
@@ -254,15 +256,20 @@ track([C3P, (49.6, C3P[1]), (SW2[0], 35.95), SW2], "VBAT_SW", 1.0)
 
 # Battery sense: switched battery along the bottom edge (bottom layer), up between socket pins to R1;
 # divider node over to GPIO34 on top
-track([SW2, (SW2[0], 41.3), (XR1, 41.3), R1B], "VBAT_SW", 0.4, B)
+track([SW2, (SW2[0], 41.3), (XR1, 41.3)], "VBAT_SW", SIG_W, B)
+track([(XR1, 41.3), (XR1, NECK_Y)], "VBAT_SW", NECK_W, B)          # between J5 pin 1 and the socket row
+track([(XR1, NECK_Y), R1B], "VBAT_SW", SIG_W, B)
 track([R1T, (16.0, R1T[1]), (16.0, 34.5), (kx(4), 34.5), (kx(4), YL)], "BAT_SENSE", SIG_W)
 track([R1T, R2T, C2T], "BAT_SENSE", SIG_W)
 
 # I2C to the OLED header: bottom layer under the DevKit, passing between the bottom-row socket pads
-track([(kx(2), YR), (kx(2), 20.0), (10.5, 20.0), (10.5, 33.5), (XO[0], 33.5), (XO[0], YBOT)], "SCL", SIG_W, B)
-track([(kx(5), YR), (kx(5), 35.0), (XO[1], 35.0), (XO[1], YBOT)], "SDA", SIG_W, B)
+track([(kx(2), YR), (kx(2), 20.0), (10.5, 20.0), (10.5, 33.5), (XO[0], 33.5), (XO[0], NECK_Y)], "SCL", SIG_W, B)
+track([(XO[0], NECK_Y), (XO[0], YBOT)], "SCL", NECK_W, B)
+track([(kx(5), YR), (kx(5), 35.0), (XO[1], 35.0), (XO[1], NECK_Y)], "SDA", SIG_W, B)
+track([(XO[1], NECK_Y), (XO[1], YBOT)], "SDA", NECK_W, B)
 # 3V3 on top: from DevKit 3V3 along just inside the top row, then down between pins to the OLED header
-track([(kx(15), YR), (kx(15), YR + 1.6), (XO[2], YR + 1.6), (XO[2], YBOT)], "+3V3", SIG_W)
+track([(kx(15), YR), (kx(15), YR + 1.4), (XO[2], YR + 1.4), (XO[2], NECK_Y)], "+3V3", SIG_W)
+track([(XO[2], NECK_Y), (XO[2], YBOT)], "+3V3", NECK_W)
 
 # Spare I/O straight down to the bottom header
 for k in [6, 7, 8, 9, 10, 11, 13]:

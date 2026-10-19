@@ -108,7 +108,7 @@ float batteryVolts() {
 | Pololu D24V50F5 | pololu.com/product/2851 + dimension drawing 0J1436 | 6–38 V in, 5 V ±4 % out, reverse protection, EN pulled up; pin row 1.27 mm from edge, OUT 1.91 mm from right edge, 2.54 mm pitch, 1.02 mm holes |
 | Hot-plug spikes | Pololu app note 0J16 | Spikes can exceed 3× the supply, worse with switch bounce; fix is an electrolytic across the input → C3 |
 | C1 | Panasonic EEU-FR1C471 (distributor listings) | 8 mm dia, 3.5 mm lead spacing, 16 V |
-| Fabrication limits | pcbway.com/capabilities | Tracks ≥ 0.30 mm (min 0.10), vias 0.4/0.8 mm, annular ring ≥ 0.35 mm (min 0.15), silkscreen text ≥ 0.8 mm and lines ≥ 0.15 mm |
+| Fabrication limits | pcbway.com/capabilities | Tracks ≥ 0.40 mm (min 0.10): signals 0.5 mm, necked to 0.4 mm only between socket pins; power 1.5–2.0 mm, vias 0.4/0.8 mm, annular ring ≥ 0.35 mm (min 0.15), silkscreen text ≥ 0.8 mm and lines ≥ 0.15 mm |
 
 KiCad DRC is clean (0 violations). Headers that deliberately sit side by side on the 2.54 mm grid are allowed in `sesame-devkit-carrier.kicad_dru`; `audit.py` checks their real spacing instead.
 
