@@ -38,7 +38,7 @@ def load(lib, name):
     assert fp is not None, (lib, name)
     return fp
 
-def place(ref, lib, name, pin1, pin2_dir=None, value="", pins=None, ref_off=None, show_ref=True):
+def place(ref, lib, name, pin1, pin2_dir=None, value="", pins=None, ref_off=None, show_ref=True, strip_silk=False):
     """Place a footprint so pad 1 lands on pin1 and pad 2 points along pin2_dir."""
     fp = load(lib, name)
     board.Add(fp)
@@ -68,6 +68,10 @@ def place(ref, lib, name, pin1, pin2_dir=None, value="", pins=None, ref_off=None
     fp.Reference().SetTextSize(VECTOR2I(FromMM(0.8), FromMM(0.8)))
     fp.Reference().SetTextThickness(FromMM(0.12))
     fp.Reference().SetVisible(show_ref)
+    if strip_silk:   # side-by-side headers: move per-part outlines off the silkscreen, group outlines are drawn instead
+        for g in fp.GraphicalItems():
+            if g.GetLayer() == pcbnew.F_SilkS:
+                g.SetLayer(pcbnew.F_Fab)
     return fp
 
 PITCH = 2.54
@@ -90,26 +94,26 @@ RIGHT = ["D23", "SCL", "TX0", "RX0", "SDA", "D19", "D18", "D5", "D17", "D16",
          "D4", "D2", "D15", "GND", "+3V3"]
 UNUSED = {"EN", "VP36", "VN39", "D35", "D12", "TX0", "RX0", "D5"}
 place("J2", "Connector_PinSocket_2.54mm", "PinSocket_1x15_P2.54mm_Vertical", (kx(1), YR), (1, 0),
-      "DevKit R", {i + 1: (None if n in UNUSED else n) for i, n in enumerate(RIGHT)}, show_ref=False)
+      "DevKit R", {i + 1: (None if n in UNUSED else n) for i, n in enumerate(RIGHT)}, show_ref=False, strip_silk=True)
 place("J1", "Connector_PinSocket_2.54mm", "PinSocket_1x15_P2.54mm_Vertical", (kx(1), YL), (1, 0),
-      "DevKit L", {i + 1: (None if n in UNUSED else n) for i, n in enumerate(LEFT)}, show_ref=False)
+      "DevKit L", {i + 1: (None if n in UNUSED else n) for i, n in enumerate(LEFT)}, show_ref=False, strip_silk=True)
 
 # Servo headers above the DevKit: S, +5V, GND from the DevKit outward
 SERVOS = [("L1", "D23", 1), ("L2", "D19", 6), ("L4", "D18", 7), ("L3", "D17", 9),
           ("R3", "D16", 10), ("R4", "D4", 11), ("R2", "D2", 12), ("R1", "D15", 13)]
 for i, (name, sig, k) in enumerate(SERVOS):
     place("S%d" % (i + 1), "Connector_PinHeader_2.54mm", "PinHeader_1x03_P2.54mm_Vertical",
-          (kx(k), YS), (0, -1), "Servo " + name, {1: sig, 2: "+5V", 3: "GND"}, show_ref=False)
+          (kx(k), YS), (0, -1), "Servo " + name, {1: sig, 2: "+5V", 3: "GND"}, show_ref=False, strip_silk=True)
 
 # Bottom strip: spare I/O (each pin straight below its DevKit pin) and the OLED header
 place("J4", "Connector_PinHeader_2.54mm", "PinHeader_1x06_P2.54mm_Vertical", (kx(6), YBOT), (1, 0),
-      "IO", {1: "D32", 2: "D33", 3: "D25", 4: "D26", 5: "D27", 6: "D14"}, show_ref=False)
+      "IO", {1: "D32", 2: "D33", 3: "D25", 4: "D26", 5: "D27", 6: "D14"}, show_ref=False, strip_silk=True)
 place("J5", "Connector_PinHeader_2.54mm", "PinHeader_1x03_P2.54mm_Vertical", (kx(13), YBOT), (1, 0),
-      "IO2", {1: "D13", 2: "GND", 3: "+5V"}, show_ref=False)
+      "IO2", {1: "D13", 2: "GND", 3: "+5V"}, show_ref=False, strip_silk=True)
 # OLED pins sit between DevKit pins so their traces can pass between the socket pads: C D V G
 XO = [kx(1) + 1.27, kx(2) + 1.27, kx(3) + 1.27, kx(4) + 1.27]
 place("J3", "Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical", (XO[0], YBOT), (1, 0),
-      "OLED", {1: "SCL", 2: "SDA", 3: "+3V3", 4: "GND"}, show_ref=False)
+      "OLED", {1: "SCL", 2: "SDA", 3: "+3V3", 4: "GND"}, show_ref=False, strip_silk=True)
 
 # Pololu D24V50F5 on a 5-pin header along its bottom edge: EN VIN GND GND OUT (EN unconnected, pulled up on the module)
 # Dimensions from Pololu's drawing (pololu.com/file/0J1436): 17.8 x 20.3 mm board, pin row 1.27 mm above the
@@ -120,17 +124,23 @@ UY = U_Y0 + 20.3 - 1.27                    # pin row
 def ux(n):
     return U_X0 + 17.8 - 1.91 - PITCH * (5 - n)
 place("U1", "Connector_PinHeader_2.54mm", "PinHeader_1x05_P2.54mm_Vertical", (ux(1), UY), (1, 0),
-      "Pololu D24V50F5", {1: None, 2: "VBAT_SW", 3: "GND", 4: "GND", 5: "+5V"}, show_ref=False)
+      "Pololu D24V50F5", {1: None, 2: "VBAT_SW", 3: "GND", 4: "GND", 5: "+5V"}, show_ref=False, strip_silk=True)
 
 # Bulk capacitor on 5V
 C1P = (49.25, 27.0)
 place("C1", "Capacitor_THT", "CP_Radial_D8.0mm_P3.50mm", C1P, (1, 0),
-      "470uF 16V", {1: "+5V", 2: "GND"}, ref_off=(51.0, 32.3))
+      "470uF 16V", {1: "+5V", 2: "GND"}, ref_off=(45.8, 27.0))
 
 # Battery pigtail pads (16-18 AWG, e.g. an XT30 pigtail): square pad = +, round pad = -
 BATP, BATN = (63.0, 26.5), (63.0, 26.5 + 7.8)
 place("J6", "Connector_Wire", "SolderWire-1.5sqmm_1x02_P7.8mm_D1.7mm_OD3.9mm", BATP, (0, 1),
       "Battery pigtail", {1: "VBAT", 2: "GND"}, show_ref=False)
+
+# Regulator input capacitor: damps the LC spike when the battery or switch connects (Pololu app note 0J16).
+# 5 mm wide so it clears the DevKit's USB end even if that end sits 5 mm past pin 15.
+C3P = (46.4, 33.8)
+place("C3", "Capacitor_THT", "CP_Radial_D5.0mm_P2.00mm", C3P, (0, 1),
+      "47uF 35V", {1: "VBAT_SW", 2: "GND"}, ref_off=(46.4, 39.4))
 
 # Power switch wire pads (bridge with a wire if no switch)
 SW1, SW2 = (57.4, 38.8), (52.0, 38.8)
@@ -143,7 +153,7 @@ R1T, R1B = (XR1, 21.0), (XR1, 21.0 + 10.16)
 R2T = (XR1 + 3.0, 21.0)
 C2T = (XR1 + 6.0, 21.0)
 place("R1", "Resistor_THT", "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", R1B, (0, -1),
-      "100k", {1: "VBAT_SW", 2: "BAT_SENSE"}, ref_off=(XR1 - 1.8, 26.1))
+      "100k", {1: "VBAT_SW", 2: "BAT_SENSE"}, ref_off=(XR1 - 2.4, 26.1))
 place("R2", "Resistor_THT", "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", R2T, (0, 1),
       "22k", {1: "BAT_SENSE", 2: "GND"}, ref_off=(R2T[0], 33.0))
 place("C2", "Capacitor_THT", "C_Disc_D5.0mm_W2.5mm_P5.00mm", C2T, (0, 1),
@@ -187,7 +197,7 @@ for name, sig, k in SERVOS:
 track([(kx(1), Y5), (kx(13), Y5)], "+5V", 2.0)
 track([(kx(1), Y5), (kx(13), Y5)], "+5V", 2.0, B)   # doubled on the back for peak servo current
 # Regulator OUT -> servo rail and DevKit VIN on the bottom layer; bulk cap tees in
-XF = 45.0
+XF = 44.0
 track([(ux(5), UY), (ux(5), 22.3), (XF, 22.3), (XF, Y5), (kx(13), Y5)], "+5V", 2.0, B)
 track([(XF, 22.3), (XF, YL), (kx(15), YL)], "+5V", 1.5, B)
 track([C1P, (C1P[0], 22.3)], "+5V", 1.2, B)
@@ -196,6 +206,7 @@ track([(kx(15), YL), (kx(15), YBOT)], "+5V", 0.8)
 # Battery: pigtail + -> switch -> regulator VIN
 track([BATP, (60.0, BATP[1]), (60.0, 37.7), (58.9, SW1[1]), SW1], "VBAT", 1.5)
 track([SW2, (56.5, 34.3), (56.5, 22.5), (ux(2), 22.5), (ux(2), UY)], "VBAT_SW", 1.5)
+track([C3P, (49.6, C3P[1]), (SW2[0], 35.95), SW2], "VBAT_SW", 1.0)
 
 # Battery sense: switched battery along the bottom edge (bottom layer), up between socket pins to R1;
 # divider node over to GPIO34 on top
@@ -247,16 +258,18 @@ def text(s, x, y, size=1.0, layer=SILK, angle=0, just=None):
     board.Add(t)
 
 # DevKit outline (its antenna end hangs off the left edge) and orientation notes
-for a, b in [((0.15, DEV_Y0), (DEV_X1, DEV_Y0)), ((DEV_X1, DEV_Y0), (DEV_X1, DEV_Y1)), ((DEV_X1, DEV_Y1), (0.15, DEV_Y1))]:
+for a, b in [((0.15, DEV_Y0), (DEV_X1, DEV_Y0)), ((DEV_X1, DEV_Y0), (DEV_X1, DEV_Y1))]:   # bottom edge left off: labels live there
     line(a, b, SILK, 0.15)
 text("ESP32 DevKit (30-pin)", 15.0, 16.5, 1.2)
 text("<- ANTENNA overhangs", 9.0, 19.0, 0.9, just="left")
 text("USB ->", 39.0, 16.5, 1.0)
 text("SESAME CARRIER v1", 2.0, 31.5, 0.9, just="left")
-text("BAT->IO34 x5.55", 37.0, 34.6, 0.8)
+text("BAT->IO34 x5.55", 35.0, 34.6, 0.8)
 # Servo labels above each column, S/+/- legend to the right of the block
 for name, sig, k in SERVOS:
     text(name, kx(k), 1.0, 0.8)
+for ks in ([1], [6, 7], [9, 10, 11, 12, 13]):   # one outline per group of side-by-side servo headers
+    rect(kx(ks[0]) - 1.27, YM - 1.27, kx(ks[-1]) + 1.27, YS + 1.27, SILK, 0.12)
 for y, s in [(YS, "S"), (Y5, "+"), (YM, "-")]:
     text(s, kx(13) + 2.2, y, 0.8)
 # Bottom-strip labels (between the socket row and the header pins)
@@ -364,7 +377,7 @@ zone(F)
 zone(B)
 
 # GND stitching vias in open areas
-for xy in [(28.5, 33.0), (43.0, 28.0), (42.5, 33.0), (54.0, 31.0), (48.0, 36.0), (66.6, 30.0), (60.0, 18.0)]:
+for xy in [(28.5, 33.0), (42.3, 28.0), (42.5, 33.0), (54.0, 31.0), (66.6, 30.0), (60.0, 18.0)]:
     via(xy, "GND")
 
 # ---------------------------------------------------------------- design rules + fill
@@ -374,6 +387,11 @@ ds.m_MinClearance = FromMM(0.2)
 ds.m_ViasMinSize = FromMM(0.6)
 ds.m_MinThroughDrill = FromMM(0.3)
 ds.m_CopperEdgeClearance = FromMM(0.3)
+
+# PCBWay's legend minimum is 0.15 mm: lift every silkscreen line (KiCad footprints default to 0.12) to at least that
+for item in list(board.GetDrawings()) + [g for fp in board.GetFootprints() for g in fp.GraphicalItems()]:
+    if isinstance(item, pcbnew.PCB_SHAPE) and item.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS)             and not item.IsSolidFill() and item.GetWidth() < FromMM(0.15):
+        item.SetWidth(FromMM(0.15))
 
 pcbnew.ZONE_FILLER(board).Fill(board.Zones())
 board.Save(OUT)

@@ -1,0 +1,9 @@
+(version 1)
+
+# Headers and sockets deliberately sit side by side on the 2.54 mm grid (servo blocks, and the
+# I/O + OLED headers 2.8 mm from the DevKit socket row). Their plastic bodies clear each other
+# (audit.py checks the real gaps); only KiCad's courtyard margins overlap.
+(rule "side-by-side 2.54mm headers"
+  (constraint courtyard_clearance (min 0mm))
+  (condition "(A.Reference == 'S?' || A.Reference == 'J?') && (B.Reference == 'S?' || B.Reference == 'J?')")
+  (severity ignore))

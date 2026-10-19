@@ -16,17 +16,27 @@ PASS servo 5V rail: 2.0 mm on both layers carries 7.9 A (need ~5 A peak)
 NOTE other +5V branches: 1.5 mm to DevKit VIN (3.2 A, ESP32 needs 0.5 A), 1.2 mm cap tee, 0.8 mm to the spare 5V header pin (2.0 A)
 PASS GND fill on F.Cu: 9 region(s); every GND pad reaches it
 PASS GND fill on B.Cu: 6 region(s); every GND pad reaches it
-PASS U1: drill [1.0] mm vs lead ~0.64 mm
-PASS R1: drill [0.8] mm vs lead ~0.6 mm
+PASS C2: drill [0.8] mm vs lead ~0.6 mm
+PASS J6: drill [2.15] mm vs lead ~1.6 mm
 PASS J1: drill [1.0] mm vs lead ~0.64 mm
 PASS C1: drill [0.8] mm vs lead ~0.6 mm
-PASS J6: drill [2.15] mm vs lead ~1.6 mm
-PASS C2: drill [0.8] mm vs lead ~0.6 mm
+PASS U1: drill [1.0] mm vs lead ~0.64 mm
 PASS SW1: drill [1.75] mm vs lead ~1.2 mm
+PASS C3: drill [0.8] mm vs lead ~0.5 mm
+PASS R1: drill [0.8] mm vs lead ~0.6 mm
 PASS C1 pad 1 (+, marked on silkscreen) is +5V
+PASS C3 pad 1 (+, marked on silkscreen) is switched battery
+PASS C1 16 V rating vs 5.2 V max regulator output (3x margin)
+PASS C3 (47 uF) 35 V rating vs 12.6 V full pack (2.8x margin; it absorbs the hot-plug spike, Pololu 0J16)
 PASS battery: square pad is BAT+ (VBAT)
 PASS Pololu header left->right = EN VIN GND GND OUT: ['EN(nc)', 'VBAT_SW', 'GND', 'GND', '+5V']
 PASS all 8 servo headers ordered S, +, - from the DevKit outward (brown on the edge side)
 PASS header labels (I/O, OLED, servo names) sit over the matching nets
+PASS narrowest track 0.30 mm (PCBWay min 0.10)
+PASS 6 vias: drill >= 0.3 mm, annular ring >= 0.15 mm
+PASS smallest PTH annular ring 0.35 mm (J1) (PCBWay min 0.15)
+PASS silkscreen text height >= 0.8 mm (49 texts)
+PASS silkscreen lines >= 0.15 mm, face-art pixels >= 0.164 mm (PCBWay legend min 0.15)
+PASS closest pins on neighbouring headers/sockets 2.54 mm apart (>= 2.54 grid, so 2.54 mm bodies fit)
 
 NO FAILURES

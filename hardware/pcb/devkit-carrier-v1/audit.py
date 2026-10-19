@@ -26,13 +26,13 @@ srefs = {fp.GetValue().replace("Servo ", ""): fp.GetReference() for fp in board.
 for name, lab in servo_label.items():
     spec["servo " + name].update({pin("R", lab), srefs[name] + ".1"})
 spec["5V"].update({pin("L", "VIN"), "U1.5", "C1.1", "J5.3"} | {s + ".2" for s in srefs.values()})
-spec["GND"].update({pin("L", "GND"), pin("R", "GND"), "U1.3", "U1.4", "C1.2", "C2.2", "R2.2", "J3.4", "J5.2", "J6.2"}
+spec["GND"].update({pin("L", "GND"), pin("R", "GND"), "U1.3", "U1.4", "C1.2", "C2.2", "C3.2", "R2.2", "J3.4", "J5.2", "J6.2"}
                    | {s + ".3" for s in srefs.values()})
 spec["3V3"].update({pin("R", "3V3"), "J3.3"})
 spec["SCL"].update({pin("R", "D22"), "J3.1"})
 spec["SDA"].update({pin("R", "D21"), "J3.2"})
 spec["VBAT"].update({"J6.1", "SW1.1"})
-spec["VBAT_SW"].update({"SW1.2", "U1.2", "R1.1"})
+spec["VBAT_SW"].update({"SW1.2", "U1.2", "R1.1", "C3.1"})
 spec["SENSE"].update({pin("L", "D34"), "R1.2", "R2.1", "C2.1"})
 for i, lab in enumerate(["D32", "D33", "D25", "D26", "D27", "D14"]):
     spec["IO " + lab].update({pin("L", lab), "J4.%d" % (i + 1)})
@@ -127,7 +127,7 @@ for z in zones:
 
 # ---------------------------------------------------------------- 7. hole sizes vs leads
 leads = {"J1": 0.64, "J2": 0.64, "J3": 0.64, "J4": 0.64, "J5": 0.64, "U1": 0.64, "R1": 0.6, "R2": 0.6,
-         "C1": 0.6, "C2": 0.6, "SW1": 1.2, "J6": 1.6}
+         "C1": 0.6, "C2": 0.6, "C3": 0.5, "SW1": 1.2, "J6": 1.6}
 for fp in board.GetFootprints():
     ref = fp.GetReference()
     lead = leads.get(ref, 0.64 if ref.startswith("S") else None)
@@ -135,13 +135,17 @@ for fp in board.GetFootprints():
         continue
     drills = {round(mm(p.GetDrillSize().x), 2) for p in fp.Pads() if p.GetNumber()}
     ok = all(d >= lead + 0.15 for d in drills)
-    if not ok or ref in ("J6", "SW1", "C1", "R1", "C2", "U1", "J1"):
+    if not ok or ref in ("J6", "SW1", "C1", "C3", "R1", "C2", "U1", "J1"):
         check(ok, f"{ref}: drill {sorted(drills)} mm vs lead ~{lead} mm")
 
 # ---------------------------------------------------------------- 8. polarity / orientation
 fpd = {fp.GetReference(): fp for fp in board.GetFootprints()}
 c1 = fpd["C1"]
 check(c1.FindPadByNumber("1").GetNetname() == "+5V", "C1 pad 1 (+, marked on silkscreen) is +5V")
+check(fpd["C3"].FindPadByNumber("1").GetNetname() == "VBAT_SW", "C3 pad 1 (+, marked on silkscreen) is switched battery")
+# capacitor voltage ratings vs the worst voltage each sees
+check(16 >= 5.2 * 3, "C1 16 V rating vs 5.2 V max regulator output (3x margin)")
+check(35 >= 12.6 * 2.5, "C3 (47 uF) 35 V rating vs 12.6 V full pack (2.8x margin; it absorbs the hot-plug spike, Pololu 0J16)")
 j6 = fpd["J6"]
 p1 = j6.FindPadByNumber("1")
 check(p1.GetNetname() == "VBAT" and p1.GetShape() in (pcbnew.PAD_SHAPE_ROUNDRECT, pcbnew.PAD_SHAPE_RECTANGLE), "battery: square pad is BAT+ (VBAT)")
@@ -185,6 +189,46 @@ for txt, x, y in labels:
         if n != servo_label[txt].replace("RX2", "D16").replace("TX2", "D17"):
             bad.append(f"'{txt}' -> {pad} ({n})")
 check(not bad, "header labels (I/O, OLED, servo names) sit over the matching nets" + ("" if not bad else f": {bad}"))
+
+
+# ---------------------------------------------------------------- 10. PCBWay standard 2-layer limits (pcbway.com/capabilities.html)
+trk = [mm(t.GetWidth()) for t in board.GetTracks() if t.GetClass() == "PCB_TRACK"]
+check(min(trk) >= 0.15, f"narrowest track {min(trk):.2f} mm (PCBWay min 0.10)")
+vias = [t for t in board.GetTracks() if t.GetClass() == "PCB_VIA"]
+check(all(mm(v.GetDrillValue()) >= 0.3 and (mm(v.GetWidth(pcbnew.F_Cu)) - mm(v.GetDrillValue())) / 2 >= 0.15 for v in vias),
+      f"{len(vias)} vias: drill >= 0.3 mm, annular ring >= 0.15 mm")
+rings = []
+for fp in board.GetFootprints():
+    for p in fp.Pads():
+        if p.GetAttribute() == pcbnew.PAD_ATTRIB_PTH:
+            bb = p.GetBoundingBox()
+            rings.append(((min(mm(bb.GetWidth()), mm(bb.GetHeight())) - mm(p.GetDrillSize().x)) / 2, fp.GetReference()))
+check(min(rings)[0] >= 0.15, f"smallest PTH annular ring {min(rings)[0]:.2f} mm ({min(rings)[1]}) (PCBWay min 0.15)")
+silk_text = [d for d in board.GetDrawings() if isinstance(d, pcbnew.PCB_TEXT) and d.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS)]
+silk_text += [f.Reference() for f in board.GetFootprints() if f.Reference().IsVisible()]
+check(min(mm(t.GetTextHeight()) for t in silk_text) >= 0.8, f"silkscreen text height >= 0.8 mm ({len(silk_text)} texts)")
+lines, fills = [], []
+for d in list(board.GetDrawings()) + [g for fp in board.GetFootprints() for g in fp.GraphicalItems()]:
+    if isinstance(d, pcbnew.PCB_SHAPE) and d.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS):
+        if d.IsSolidFill():
+            bb = d.GetBoundingBox()
+            fills.append(min(mm(bb.GetWidth()), mm(bb.GetHeight())))
+        else:
+            lines.append(mm(d.GetWidth()))
+check(min(lines) >= 0.15 and min(fills) >= 0.15,
+      f"silkscreen lines >= {min(lines):.2f} mm, face-art pixels >= {min(fills):.3f} mm (PCBWay legend min 0.15)")
+
+# ---------------------------------------------------------------- 11. side-by-side headers: real spacing (courtyard rule waived in .kicad_dru)
+def pads_xy(ref):
+    return [(mm(p.GetPosition().x), mm(p.GetPosition().y)) for p in fpd[ref].Pads() if p.GetNumber()]
+grid_refs = [r for r in fpd if r[0] in "SJ" and r != "J6"]
+worst = 99
+for i, a in enumerate(grid_refs):
+    for b in grid_refs[i + 1:]:
+        for (ax, ay) in pads_xy(a):
+            for (bx, by) in pads_xy(b):
+                worst = min(worst, math.hypot(ax - bx, ay - by))
+check(worst >= 2.54 - 1e-6, f"closest pins on neighbouring headers/sockets {worst:.2f} mm apart (>= 2.54 grid, so 2.54 mm bodies fit)")
 
 print("\n".join(notes))
 print("\n".join(fails) if fails else "\nNO FAILURES")

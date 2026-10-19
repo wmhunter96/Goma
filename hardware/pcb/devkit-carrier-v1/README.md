@@ -48,7 +48,8 @@ Upload `sesame-devkit-carrier-gerbers.zip`. Settings: 2 layers, 69 × 42 mm, 1.6
 | S1–S8 | 1×3 male header, 2.54 mm | 8 | Servo plugs. Can be cut from 40-pin strips |
 | J3 | 1×4 male header | 1 | OLED: C D V G = SCL, SDA, 3V3, GND |
 | J4, J5 | 1×6 + 1×3 male header | 1 each | Spare I/O (optional) |
-| C1 | 470 µF 16 V electrolytic, 8 mm dia, 3.5 mm pitch, ≤ 12 mm tall | 1 | 5V bulk cap. Mind polarity (+ marked) |
+| C1 | 470 µF 16 V electrolytic, 8 mm dia, 3.5 mm pitch, ≤ 12 mm tall (e.g. Panasonic EEU-FR1C471) | 1 | 5V bulk cap. Mind polarity (+ marked) |
+| C3 | 47 µF 35 V electrolytic, 5 mm dia, 2.0 mm pitch, ≤ 11 mm tall | 1 | Regulator input: damps the voltage spike when the battery/switch connects. Must be 35 V or higher. Mind polarity (+ marked) |
 | R1 | 100 kΩ ¼ W (1% preferred) | 1 | Battery divider top |
 | R2 | 22 kΩ ¼ W (1% preferred) | 1 | Battery divider bottom |
 | C2 | 100 nF ceramic, 5 mm pitch | 1 | Sense filter |
@@ -85,6 +86,19 @@ float batteryVolts() {
   return analogReadMilliVolts(34) * 5.5455f / 1000.0f;   // 12.6 V full, ~10.5 V time to charge (3S)
 }
 ```
+
+## Verified against official documentation
+
+| Item | Source | What was checked |
+|---|---|---|
+| ESP32 DevKit pinout | AITRIP listing photo (B08D5ZD528) | Pin order both rows, VIN/3V3 at USB end, 25.4 mm row spacing (measured), antenna starts ~5 mm past pin 1 (measured) |
+| ESP32 pins | Espressif ESP32 datasheet v5.3 | GPIO34 = ADC1_CH6, input-only; strapping pins GPIO0/2/5/12/15 and their boot levels; ADC 12 dB range 150–2450 mV; 100 nF on the ADC input as in the datasheet test setup |
+| Pololu D24V50F5 | pololu.com/product/2851 + dimension drawing 0J1436 | 6–38 V in, 5 V ±4 % out, reverse protection, EN pulled up; pin row 1.27 mm from edge, OUT 1.91 mm from right edge, 2.54 mm pitch, 1.02 mm holes |
+| Hot-plug spikes | Pololu app note 0J16 | Spikes can exceed 3× the supply, worse with switch bounce; fix is an electrolytic across the input → C3 |
+| C1 | Panasonic EEU-FR1C471 (distributor listings) | 8 mm dia, 3.5 mm lead spacing, 16 V |
+| Fabrication limits | pcbway.com/capabilities | Tracks ≥ 0.30 mm (min 0.10), vias 0.4/0.8 mm, annular ring ≥ 0.35 mm (min 0.15), silkscreen text ≥ 0.8 mm and lines ≥ 0.15 mm |
+
+KiCad DRC is clean (0 violations). Headers that deliberately sit side by side on the 2.54 mm grid are allowed in `sesame-devkit-carrier.kicad_dru`; `audit.py` checks their real spacing instead.
 
 ## Notes
 
