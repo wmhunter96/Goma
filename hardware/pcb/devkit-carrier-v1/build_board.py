@@ -10,6 +10,7 @@ import math
 import os
 import pcbnew
 from pcbnew import VECTOR2I, FromMM
+from sesame_ids import symbol_uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "sesame-devkit-carrier.kicad_pcb")
@@ -34,16 +35,38 @@ def net(name):
     return nets[name]
 
 # ---------------------------------------------------------------- footprints
-def load(lib, name):
-    fp = pcbnew.FootprintLoad(os.path.join(FPLIB, lib + ".pretty"), name)
-    assert fp is not None, (lib, name)
+# Every footprint comes from the project library Sesame.pretty: KiCad's stock footprint with silkscreen lines lifted
+# to PCBWay's 0.15 mm minimum, and for headers that sit side by side, the per-part outline moved to the Fab layer
+# (one outline per group is drawn instead). Keeping these in a library means the board matches its library exactly.
+SESAME_LIB = os.path.join(HERE, "Sesame.pretty")
+os.makedirs(SESAME_LIB, exist_ok=True)
+_io = pcbnew.PCB_IO_KICAD_SEXPR()
+_saved = set()
+
+def load(lib, name, group_silk=False):
+    new = name + ("_GroupSilk" if group_silk else "")
+    if new not in _saved:
+        fp = _io.FootprintLoad(os.path.join(FPLIB, lib + ".pretty"), name)
+        assert fp is not None, (lib, name)
+        for g in fp.GraphicalItems():
+            if g.GetLayer() == pcbnew.F_SilkS and isinstance(g, pcbnew.PCB_SHAPE):
+                if group_silk:
+                    g.SetLayer(pcbnew.F_Fab)
+                elif g.GetWidth() < FromMM(0.15) and not g.IsSolidFill():
+                    g.SetWidth(FromMM(0.15))
+        fp.SetFPID(pcbnew.LIB_ID("Sesame", new))
+        _io.FootprintSave(SESAME_LIB, fp)
+        _saved.add(new)
+    fp = _io.FootprintLoad(SESAME_LIB, new)
+    fp.SetFPID(pcbnew.LIB_ID("Sesame", new))
     return fp
 
 def place(ref, lib, name, pin1, pin2_dir=None, value="", pins=None, ref_off=None, show_ref=True, strip_silk=False):
     """Place a footprint so pad 1 lands on pin1 and pad 2 points along pin2_dir."""
-    fp = load(lib, name)
+    fp = load(lib, name, strip_silk)
     board.Add(fp)
     fp.SetReference(ref)
+    fp.SetPath(pcbnew.KIID_PATH("/" + symbol_uuid(ref)))
     fp.SetValue(value or name)
     fp.Value().SetVisible(False)
     if pin2_dir is not None:
@@ -69,10 +92,6 @@ def place(ref, lib, name, pin1, pin2_dir=None, value="", pins=None, ref_off=None
     fp.Reference().SetTextSize(VECTOR2I(FromMM(0.8), FromMM(0.8)))
     fp.Reference().SetTextThickness(FromMM(0.12))
     fp.Reference().SetVisible(show_ref)
-    if strip_silk:   # side-by-side headers: move per-part outlines off the silkscreen, group outlines are drawn instead
-        for g in fp.GraphicalItems():
-            if g.GetLayer() == pcbnew.F_SilkS:
-                g.SetLayer(pcbnew.F_Fab)
     return fp
 
 PITCH = 2.54
@@ -98,6 +117,13 @@ place("J2", "Connector_PinSocket_2.54mm", "PinSocket_1x15_P2.54mm_Vertical", (kx
       "DevKit R", {i + 1: (None if n in UNUSED else n) for i, n in enumerate(RIGHT)}, show_ref=False, strip_silk=True)
 place("J1", "Connector_PinSocket_2.54mm", "PinSocket_1x15_P2.54mm_Vertical", (kx(1), YL), (1, 0),
       "DevKit L", {i + 1: (None if n in UNUSED else n) for i, n in enumerate(LEFT)}, show_ref=False, strip_silk=True)
+# Unused pins get KiCad's standard "unconnected-(REF-PIN-PadN)" nets, matching the schematic's no-connect flags
+SCH_NAME = {"VP36": "VP", "VN39": "VN"}
+for ref, row in (("J1", LEFT), ("J2", RIGHT)):
+    fpr = [f for f in board.GetFootprints() if f.GetReference() == ref][0]
+    for i, n in enumerate(row):
+        if n in UNUSED:
+            fpr.FindPadByNumber(str(i + 1)).SetNet(net("unconnected-(%s-%s-Pad%d)" % (ref, SCH_NAME.get(n, n), i + 1)))
 
 # Servo headers above the DevKit: S, +5V, GND from the DevKit outward
 SERVOS = [("L1", "D23", 1), ("L2", "D19", 6), ("L4", "D18", 7), ("L3", "D17", 9),
@@ -125,7 +151,8 @@ UY = U_Y0 + 20.3 - 1.27                    # pin row
 def ux(n):
     return U_X0 + 17.8 - 1.91 - PITCH * (5 - n)
 place("U1", "Connector_PinHeader_2.54mm", "PinHeader_1x05_P2.54mm_Vertical", (ux(1), UY), (1, 0),
-      "Pololu D24V50F5", {1: None, 2: "VBAT_SW", 3: "GND", 4: "GND", 5: "+5V"}, show_ref=False, strip_silk=True)
+      "Pololu D24V50F5", {1: "unconnected-(U1-EN-Pad1)", 2: "VBAT_SW", 3: "GND", 4: "GND", 5: "+5V"},
+      show_ref=False, strip_silk=True)
 
 # Bulk capacitor on 5V
 C1P = (49.25, 27.0)
@@ -175,6 +202,7 @@ for ref, (x, y, r) in [("H%d" % (i + 1), h) for i, h in enumerate(HOLES)] + [("H
     fp = load("MountingHole", "MountingHole_2.7mm_M2.5" if r == 3.0 else "MountingHole_2.2mm_M2")
     board.Add(fp)
     fp.SetReference(ref)
+    fp.SetPath(pcbnew.KIID_PATH("/" + symbol_uuid(ref)))
     fp.Reference().SetVisible(False)
     fp.Value().SetVisible(False)
     fp.SetPosition(P(x, y))

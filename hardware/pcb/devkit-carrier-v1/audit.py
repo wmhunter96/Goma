@@ -45,7 +45,7 @@ for fp in board.GetFootprints():
         if p.GetNumber() == "":
             continue
         key = f"{fp.GetReference()}.{p.GetNumber()}"
-        if p.GetNetname():
+        if p.GetNetname() and not p.GetNetname().startswith("unconnected-"):
             actual[p.GetNetname()].add(key)
         else:
             unconnected_pads.append(key)
@@ -150,7 +150,10 @@ j6 = fpd["J6"]
 p1 = j6.FindPadByNumber("1")
 check(p1.GetNetname() == "VBAT" and p1.GetShape() in (pcbnew.PAD_SHAPE_ROUNDRECT, pcbnew.PAD_SHAPE_RECTANGLE), "battery: square pad is BAT+ (VBAT)")
 u = fpd["U1"]
-xs = [(mm(u.FindPadByNumber(str(i)).GetPosition().x), u.FindPadByNumber(str(i)).GetNetname() or "EN(nc)") for i in range(1, 6)]
+def _nm(p):
+    n = p.GetNetname()
+    return "EN(nc)" if not n or n.startswith("unconnected-") else n
+xs = [(mm(u.FindPadByNumber(str(i)).GetPosition().x), _nm(u.FindPadByNumber(str(i)))) for i in range(1, 6)]
 check([n for _, n in sorted(xs)] == ["EN(nc)", "VBAT_SW", "GND", "GND", "+5V"], f"Pololu header left->right = EN VIN GND GND OUT: {[n for _, n in sorted(xs)]}")
 for name, sref in srefs.items():
     f = fpd[sref]
