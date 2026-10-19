@@ -274,8 +274,7 @@ def text(s, x, y, size=1.0, layer=SILK, angle=0, just=None):
 # DevKit outline (its antenna end hangs off the left edge) and orientation notes
 for a, b in [((0.15, DEV_Y0), (DEV_X1, DEV_Y0)), ((DEV_X1, DEV_Y0), (DEV_X1, DEV_Y1))]:   # bottom edge left off: labels live there
     line(a, b, SILK, 0.15)
-text("ESP32 DevKit (30-pin)", 15.0, 16.5, 1.2)
-text("SESAME CARRIER v1", 7.0, 31.5, 0.9, just="left")
+text("ESP-WROOM-32", 15.0, 16.5, 1.2)
 text("BAT->IO34 x5.55", 35.0, 34.6, 0.8)
 # Servo labels above each column, S/+/- legend to the right of the block
 for name, sig, k in SERVOS:
