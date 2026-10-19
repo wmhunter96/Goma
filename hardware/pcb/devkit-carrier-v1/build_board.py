@@ -1,9 +1,11 @@
 # Generates the Sesame DevKit Carrier PCB (KiCad 10) for a 30-pin, 1.0"-row ESP32 DevKit.
 # Run with KiCad's bundled python:  "<KiCad>/bin/python.exe" build_board.py
 #
-# Layout (80 x 42 mm): DevKit lies along the board, USB flush with the left edge, antenna to the right.
-# Servo headers sit in a row under the DevKit, each straight below the pin that drives it.
-# Spare I/O + OLED headers run along the top edge; regulator, bulk cap, switch pads and battery pads fill the right end.
+# Layout (69 x 42 mm): the DevKit lies along the board with its antenna end hanging off the left edge,
+# so the whole antenna is clear of the carrier. USB points inward (flash the DevKit before plugging it in).
+# With the antenna to the left, the DevKit's "right" pin row (servo signals) is on top, so the servo
+# headers run along the top edge, each straight above its pin; spare I/O + OLED run along the bottom edge.
+# Regulator, bulk cap, switch pads and battery pads fill the right end.
 import os
 import pcbnew
 from pcbnew import VECTOR2I, FromMM
@@ -14,7 +16,7 @@ FPLIB = os.path.join(os.path.dirname(pcbnew.__file__), "..", "..", "share", "kic
 if not os.path.isdir(FPLIB):
     FPLIB = r"C:\Users\acehu\AppData\Local\Programs\KiCad\10.0\share\kicad\footprints"
 
-W, H = 80.0, 42.0
+W, H = 69.0, 42.0
 board = pcbnew.BOARD()
 board.SetCopperLayerCount(2)
 
@@ -69,12 +71,17 @@ def place(ref, lib, name, pin1, pin2_dir=None, value="", pins=None, ref_off=None
     return fp
 
 PITCH = 2.54
-YT, YB = 4.8, 4.8 + 25.4          # DevKit socket rows: top (DevKit "left" row), bottom (DevKit "right" row)
-X15 = 4.0                         # x of pin 15 (USB end); pin 1 is at the antenna end
-DEV_X0, DEV_X1 = 0.0, 51.0        # DevKit board extent along x
-DEV_Y0, DEV_Y1 = YT - 1.3, YB + 1.3
+X1 = 2.5                          # x of DevKit pin 1 (antenna end); the board edge is 2.5 mm past it
 def kx(k):                        # x of DevKit pin k (1..15)
-    return X15 + PITCH * (15 - k)
+    return X1 + PITCH * (k - 1)
+DEV_X0, DEV_X1 = X1 - 11.0, kx(15) + 4.0   # DevKit board extent (antenna end is off the carrier)
+
+# Top strip: servo headers (- + S from the edge inward), then the DevKit rows, then the bottom I/O strip
+YM, Y5, YS = 2.8, 2.8 + PITCH, 2.8 + 2 * PITCH
+YR = YS + 3.8                     # DevKit "right" row (D23 ... 3V3)
+YL = YR + 25.4                    # DevKit "left" row (EN ... VIN)
+YBOT = YL + 2.8                   # spare I/O + OLED header row
+DEV_Y0, DEV_Y1 = YR - 1.3, YL + 1.3
 
 # DOIT ESP32 DevKit V1 (30-pin). Pin 1 = antenna end.
 LEFT = ["EN", "VP36", "VN39", "BAT_SENSE", "D35", "D32", "D33", "D25", "D26", "D27",
@@ -82,33 +89,30 @@ LEFT = ["EN", "VP36", "VN39", "BAT_SENSE", "D35", "D32", "D33", "D25", "D26", "D
 RIGHT = ["D23", "SCL", "TX0", "RX0", "SDA", "D19", "D18", "D5", "D17", "D16",
          "D4", "D2", "D15", "GND", "+3V3"]
 UNUSED = {"EN", "VP36", "VN39", "D35", "D12", "TX0", "RX0", "D5"}
-place("J1", "Connector_PinSocket_2.54mm", "PinSocket_1x15_P2.54mm_Vertical", (kx(1), YT), (-1, 0),
-      "DevKit L", {i + 1: (None if n in UNUSED else n) for i, n in enumerate(LEFT)}, show_ref=False)
-place("J2", "Connector_PinSocket_2.54mm", "PinSocket_1x15_P2.54mm_Vertical", (kx(1), YB), (-1, 0),
+place("J2", "Connector_PinSocket_2.54mm", "PinSocket_1x15_P2.54mm_Vertical", (kx(1), YR), (1, 0),
       "DevKit R", {i + 1: (None if n in UNUSED else n) for i, n in enumerate(RIGHT)}, show_ref=False)
+place("J1", "Connector_PinSocket_2.54mm", "PinSocket_1x15_P2.54mm_Vertical", (kx(1), YL), (1, 0),
+      "DevKit L", {i + 1: (None if n in UNUSED else n) for i, n in enumerate(LEFT)}, show_ref=False)
 
-# Servo headers under the DevKit: S, +5V, GND from the DevKit outward
-YS, Y5, YG = YB + 3.8, YB + 3.8 + PITCH, YB + 3.8 + 2 * PITCH
+# Servo headers above the DevKit: S, +5V, GND from the DevKit outward
 SERVOS = [("L1", "D23", 1), ("L2", "D19", 6), ("L4", "D18", 7), ("L3", "D17", 9),
           ("R3", "D16", 10), ("R4", "D4", 11), ("R2", "D2", 12), ("R1", "D15", 13)]
 for i, (name, sig, k) in enumerate(SERVOS):
     place("S%d" % (i + 1), "Connector_PinHeader_2.54mm", "PinHeader_1x03_P2.54mm_Vertical",
-          (kx(k), YS), (0, 1), "Servo " + name, {1: sig, 2: "+5V", 3: "GND"}, show_ref=False)
+          (kx(k), YS), (0, -1), "Servo " + name, {1: sig, 2: "+5V", 3: "GND"}, show_ref=False)
 
-# Top edge: spare I/O (each pin straight above its DevKit pin) and the OLED header
-YTOP = 1.6
-place("J4", "Connector_PinHeader_2.54mm", "PinHeader_1x06_P2.54mm_Vertical", (kx(6), YTOP), (-1, 0),
+# Bottom strip: spare I/O (each pin straight below its DevKit pin) and the OLED header
+place("J4", "Connector_PinHeader_2.54mm", "PinHeader_1x06_P2.54mm_Vertical", (kx(6), YBOT), (1, 0),
       "IO", {1: "D32", 2: "D33", 3: "D25", 4: "D26", 5: "D27", 6: "D14"}, show_ref=False)
-place("J5", "Connector_PinHeader_2.54mm", "PinHeader_1x03_P2.54mm_Vertical", (kx(13), YTOP), (-1, 0),
+place("J5", "Connector_PinHeader_2.54mm", "PinHeader_1x03_P2.54mm_Vertical", (kx(13), YBOT), (1, 0),
       "IO2", {1: "D13", 2: "GND", 3: "+5V"}, show_ref=False)
-# OLED pins sit between DevKit pins so their traces can pass between the socket pads
-XO = [kx(3) + 1.27, kx(2) + 1.27, kx(1) + 1.27, kx(1) + 1.27 + PITCH]   # D C V G
-place("J3", "Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical", (XO[0], YTOP), (1, 0),
-      "OLED", {1: "SDA", 2: "SCL", 3: "+3V3", 4: "GND"}, show_ref=False)
+# OLED pins sit between DevKit pins so their traces can pass between the socket pads: C D V G
+XO = [kx(1) + 1.27, kx(2) + 1.27, kx(3) + 1.27, kx(4) + 1.27]
+place("J3", "Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical", (XO[0], YBOT), (1, 0),
+      "OLED", {1: "SCL", 2: "SDA", 3: "+3V3", 4: "GND"}, show_ref=False)
 
-# Everything below sits at x >= 59 so the antenna (DevKit end, x ~44-51) has ~10 mm of clear board around it.
 # Pololu D24V50F5 on a 5-pin header along its bottom edge: EN VIN GND GND OUT (EN unconnected, pulled up on the module)
-U_X0, U_Y0 = 62.0, 1.0                     # module outline top-left (17.8 x 20.3 mm)
+U_X0, U_Y0 = 47.0, 1.0                     # module outline top-left (17.8 x 20.3 mm)
 UY = U_Y0 + 20.3 - 1.3                     # pin row
 def ux(n):
     return U_X0 + 6.1 + PITCH * (n - 1)
@@ -116,33 +120,34 @@ place("U1", "Connector_PinHeader_2.54mm", "PinHeader_1x05_P2.54mm_Vertical", (ux
       "Pololu D24V50F5", {1: None, 2: "VBAT_SW", 3: "GND", 4: "GND", 5: "+5V"}, show_ref=False)
 
 # Bulk capacitor on 5V
-C1P = (64.25, 27.0)
+C1P = (49.25, 27.0)
 place("C1", "Capacitor_THT", "CP_Radial_D8.0mm_P3.50mm", C1P, (1, 0),
-      "470uF 16V", {1: "+5V", 2: "GND"}, ref_off=(66.0, 32.3))
+      "470uF 16V", {1: "+5V", 2: "GND"}, ref_off=(51.0, 32.3))
 
 # Battery pigtail pads (16-18 AWG, e.g. an XT30 pigtail): square pad = +, round pad = -
-BATP, BATN = (75.0, 27.0), (75.0, 27.0 + 7.8)
+BATP, BATN = (63.0, 26.5), (63.0, 26.5 + 7.8)
 place("J6", "Connector_Wire", "SolderWire-1.5sqmm_1x02_P7.8mm_D1.7mm_OD3.9mm", BATP, (0, 1),
       "Battery pigtail", {1: "VBAT", 2: "GND"}, show_ref=False)
 
 # Power switch wire pads (bridge with a wire if no switch)
-SW1, SW2 = (70.4, 38.5), (65.0, 38.5)
+SW1, SW2 = (57.4, 38.8), (52.0, 38.8)
 place("SW1", "Connector_Wire", "SolderWire-1sqmm_1x02_P5.4mm_D1.4mm_OD2.7mm", SW1, (-1, 0),
       "Switch", {1: "VBAT", 2: "VBAT_SW"}, show_ref=False)
 
 # Battery sense divider under the DevKit: 100k / 22k -> GPIO34 (12.6 V -> 2.27 V, inside the ADC's accurate range), 100nF filter
-R1T, R1B = (30.9, 15.5), (30.9, 15.5 + 10.16)
-R2T, R2B = (34.0, 15.5), (34.0, 15.5 + 10.16)
-C2T = (37.0, 18.0)
+XR1 = kx(7) + 1.27                # in line with a gap between socket pins, so the sense trace can pass through
+R1T, R1B = (XR1, 21.0), (XR1, 21.0 + 10.16)
+R2T = (XR1 + 3.0, 21.0)
+C2T = (XR1 + 6.0, 21.0)
 place("R1", "Resistor_THT", "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", R1B, (0, -1),
-      "100k", {1: "VBAT_SW", 2: "BAT_SENSE"}, ref_off=(28.6, 20.6))
+      "100k", {1: "VBAT_SW", 2: "BAT_SENSE"}, ref_off=(XR1 - 1.8, 26.1))
 place("R2", "Resistor_THT", "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", R2T, (0, 1),
-      "22k", {1: "BAT_SENSE", 2: "GND"}, ref_off=(34.0, 27.6))
+      "22k", {1: "BAT_SENSE", 2: "GND"}, ref_off=(R2T[0], 33.0))
 place("C2", "Capacitor_THT", "C_Disc_D5.0mm_W2.5mm_P5.00mm", C2T, (0, 1),
-      "100nF", {1: "BAT_SENSE", 2: "GND"}, ref_off=(39.0, 20.5))
+      "100nF", {1: "BAT_SENSE", 2: "GND"}, ref_off=(C2T[0] + 2.0, 23.5))
 
-# Mounting holes (M2.5), kept away from the antenna
-for i, (x, y) in enumerate([(2.6, 39.4), (57.0, 3.0), (56.0, 39.4), (78.0, 40.0)]):
+# Mounting holes (M2.5), none near the antenna end
+for i, (x, y) in enumerate([(40.5, 2.2), (66.6, 12.0), (66.6, 40.0), (31.0, 24.0)]):
     fp = load("MountingHole", "MountingHole_2.7mm_M2.5")
     board.Add(fp)
     fp.SetReference("H%d" % (i + 1))
@@ -170,38 +175,39 @@ def via(xy, netname, d=0.8, drill=0.4):
     v.SetNet(net(netname))
     board.Add(v)
 
-SIG_W, PWR_W = 0.3, 1.5
+SIG_W = 0.3
 
-# Servo signals: straight down from the DevKit pin
+# Servo signals: straight up from the DevKit pin
 for name, sig, k in SERVOS:
-    track([(kx(k), YB), (kx(k), YS)], sig, SIG_W)
-# +5V rail through the servo + pins, then up the left edge to DevKit VIN and the IO header
+    track([(kx(k), YR), (kx(k), YS)], sig, SIG_W)
+# +5V rail through the servo + pins
 track([(kx(1), Y5), (kx(13), Y5)], "+5V", 2.0)
-track([(kx(13), Y5), (1.5, Y5), (1.5, YT), (kx(15), YT)], "+5V", PWR_W)
-# Regulator OUT -> servo rail on the bottom layer, skirting the antenna clearance; bulk cap tees in
-track([(ux(5), UY), (ux(5), 22.3), (60.5, 22.3), (60.5, Y5), (kx(1), Y5)], "+5V", 2.0, B)
+# Regulator OUT -> servo rail and DevKit VIN on the bottom layer; bulk cap tees in
+XF = 45.0
+track([(ux(5), UY), (ux(5), 22.3), (XF, 22.3), (XF, Y5), (kx(13), Y5)], "+5V", 2.0, B)
+track([(XF, 22.3), (XF, YL), (kx(15), YL)], "+5V", 1.5, B)
 track([C1P, (C1P[0], 22.3)], "+5V", 1.2, B)
+track([(kx(15), YL), (kx(15), YBOT)], "+5V", 0.8)
 
 # Battery: pigtail + -> switch -> regulator VIN
-track([BATP, (71.5, BATP[1]), (71.5, 37.4), SW1], "VBAT", 1.2)
-track([SW2, (61.8, 35.3), (61.8, 22.5), (ux(2), 22.5), (ux(2), UY)], "VBAT_SW", 1.0)
+track([BATP, (60.0, BATP[1]), (60.0, 37.7), (58.9, SW1[1]), SW1], "VBAT", 1.2)
+track([SW2, (56.5, 34.3), (56.5, 22.5), (ux(2), 22.5), (ux(2), UY)], "VBAT_SW", 1.0)
 
-# Battery sense: switched battery along the bottom edge (bottom layer) up to R1; divider node to GPIO34
-XSN = kx(4) + 1.27
-track([SW2, (SW2[0], 41.3), (XSN, 41.3), (XSN, 29.0), (R1B[0], 27.3), R1B], "VBAT_SW", 0.4, B)
-track([R1T, (R1T[0], 6.4), (kx(4), YT)], "BAT_SENSE", SIG_W)
-track([R1T, R2T, (C2T[0], R2T[1]), C2T], "BAT_SENSE", SIG_W)
+# Battery sense: switched battery along the bottom edge (bottom layer), up between socket pins to R1;
+# divider node over to GPIO34 on top
+track([SW2, (SW2[0], 41.3), (XR1, 41.3), R1B], "VBAT_SW", 0.4, B)
+track([R1T, (16.0, R1T[1]), (16.0, 34.5), (kx(4), 34.5), (kx(4), YL)], "BAT_SENSE", SIG_W)
+track([R1T, R2T, C2T], "BAT_SENSE", SIG_W)
 
-# I2C to the OLED header: bottom layer under the DevKit, passing between the top-row socket pads
-track([(kx(5), YB), (kx(5), 13.0), (XO[0], 13.0), (XO[0], YTOP)], "SDA", SIG_W, B)
-track([(kx(2), YB), (kx(2), 28.0), (XO[1], 26.73), (XO[1], YTOP)], "SCL", SIG_W, B)
-# 3V3 on top: from DevKit 3V3 along under the DevKit, up between pins to the OLED header
-track([(kx(15), YB), (kx(15), 28.6), (XO[2], 28.6), (XO[2], YTOP)], "+3V3", SIG_W)
+# I2C to the OLED header: bottom layer under the DevKit, passing between the bottom-row socket pads
+track([(kx(2), YR), (kx(2), 35.5), (XO[0], 35.5), (XO[0], YBOT)], "SCL", SIG_W, B)
+track([(kx(5), YR), (kx(5), 33.5), (XO[1], 33.5), (XO[1], YBOT)], "SDA", SIG_W, B)
+# 3V3 on top: from DevKit 3V3 along just inside the top row, then down between pins to the OLED header
+track([(kx(15), YR), (kx(15), YR + 1.6), (XO[2], YR + 1.6), (XO[2], YBOT)], "+3V3", SIG_W)
 
-# Spare I/O straight up to the top header
+# Spare I/O straight down to the bottom header
 for k in [6, 7, 8, 9, 10, 11, 13]:
-    track([(kx(k), YT), (kx(k), YTOP)], LEFT[k - 1], SIG_W)
-track([(kx(15), YT), (kx(15), YTOP)], "+5V", 0.8)
+    track([(kx(k), YL), (kx(k), YBOT)], LEFT[k - 1], SIG_W)
 
 # ---------------------------------------------------------------- outline
 def line(a, b, layer=pcbnew.Edge_Cuts, w=0.1):
@@ -218,8 +224,6 @@ def rect(x0, y0, x1, y1, layer, w):
         line(a, b, layer, w)
 
 rect(0, 0, W, H, pcbnew.Edge_Cuts, 0.1)
-# Slot under the ESP32 antenna so there is no board material beneath it
-rect(43.8, 7.5, 52.2, 27.5, pcbnew.Edge_Cuts, 0.1)
 
 # ---------------------------------------------------------------- silkscreen
 SILK = pcbnew.F_SilkS
@@ -238,25 +242,28 @@ def text(s, x, y, size=1.0, layer=SILK, angle=0, just=None):
         t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_RIGHT)
     board.Add(t)
 
-# DevKit outline, USB end and antenna end
-rect(DEV_X0 + 0.15, DEV_Y0, DEV_X1, DEV_Y1, SILK, 0.15)
-text("ESP32 DevKit (30-pin)", 20.0, 9.0, 1.2)
-text("<- USB", 7.5, 17.5, 1.0)
-text("SESAME CARRIER v1", 20.0, 22.0, 1.0)
-text("ANTENNA - keep clear", 56.0, 17.5, 0.8, angle=90)
-# Servo labels under each column, S/+/- legend at the left
+# DevKit outline (its antenna end hangs off the left edge) and orientation notes
+for a, b in [((0.15, DEV_Y0), (DEV_X1, DEV_Y0)), ((DEV_X1, DEV_Y0), (DEV_X1, DEV_Y1)), ((DEV_X1, DEV_Y1), (0.15, DEV_Y1))]:
+    line(a, b, SILK, 0.15)
+text("ESP32 DevKit (30-pin)", 22.0, 16.5, 1.2)
+text("<- ANTENNA overhangs", 9.0, 19.0, 0.9, just="left")
+text("USB ->", 37.5, 26.0, 1.0)
+text("SESAME CARRIER v1", 2.0, 31.5, 0.9, just="left")
+text("BAT->IO34 x5.55", 33.0, 31.5, 0.8)
+# Servo labels above each column, S/+/- legend to the right of the block
 for name, sig, k in SERVOS:
-    text(name, kx(k), H - 0.9, 0.8)
-for y, s in [(YS, "S"), (Y5, "+"), (YG, "-")]:
-    text(s, kx(13) - 2.2, y, 0.8)
-# Top-edge labels (just below the header pins)
+    text(name, kx(k), 1.0, 0.8)
+for y, s in [(YS, "S"), (Y5, "+"), (YM, "-")]:
+    text(s, kx(13) + 2.2, y, 0.8)
+# Bottom-strip labels (between the socket row and the header pins)
+YLAB = (YL + YBOT) / 2
 for k in [6, 7, 8, 9, 10, 11, 13]:
-    text(LEFT[k - 1][1:], kx(k), 3.2, 0.8)
-text("G", kx(14), 3.2, 0.8)
-text("5V", kx(15), 3.2, 0.8)
-for x, s in zip(XO, ["D", "C", "V", "G"]):
-    text(s, x, 3.2, 0.8)
-text("OLED", XO[0] - 2.3, YTOP, 0.8, just="right")
+    text(LEFT[k - 1][1:], kx(k), YLAB, 0.8)
+text("G", kx(14), YLAB, 0.8)
+text("5V", kx(15), YLAB, 0.8)
+for x, s in zip(XO, ["C", "D", "V", "G"]):
+    text(s, x, YLAB, 0.8)
+text("OLED", (XO[0] + XO[3]) / 2, YL - 2.2, 0.8)
 # Regulator module outline + pin labels
 rect(U_X0, U_Y0, U_X0 + 17.8, U_Y0 + 20.3, SILK, 0.15)
 text("Pololu", U_X0 + 8.9, 7.0, 0.9)
@@ -265,11 +272,10 @@ text("5V 5A", U_X0 + 8.9, 11.0, 0.9)
 for n, s in enumerate(["EN", "VIN", "GND", "GND", "OUT"]):
     text(s, ux(n + 1), UY - 1.4, 0.8, angle=90, just="left")
 # Power
-text("SWITCH", (SW1[0] + SW2[0]) / 2, 40.7, 0.8)
-text("BATT 3S", BATP[0], 24.2, 0.9)
+text("SWITCH", (SW1[0] + SW2[0]) / 2, 41.0, 0.8)
+text("BATT 3S", BATP[0], 23.7, 0.9)
 text("BAT+", BATP[0], BATP[1] + 3.0, 0.9)
 text("BAT-", BATN[0], BATN[1] + 2.9, 0.9)
-text("BAT->IO34 x5.55", 18.0, 26.2, 0.8)
 
 # ---------------------------------------------------------------- zones
 def zone(layer):
@@ -289,25 +295,9 @@ def zone(layer):
 zone(F)
 zone(B)
 
-# No copper under or beside the ESP32-WROOM antenna (DevKit's far end)
-k = pcbnew.ZONE(board)
-k.SetIsRuleArea(True)
-k.SetLayerSet(pcbnew.LSET.AllCuMask())
-k.SetDoNotAllowTracks(True)
-k.SetDoNotAllowVias(True)
-k.SetDoNotAllowZoneFills(True)
-k.SetDoNotAllowPads(False)
-k.SetDoNotAllowFootprints(False)
-ko = k.Outline()
-ko.NewOutline()
-for x, y in [(43.0, DEV_Y0), (59.0, DEV_Y0), (59.0, DEV_Y1), (43.0, DEV_Y1)]:
-    ko.Append(FromMM(x), FromMM(y))
-board.Add(k)
-
 # GND stitching vias in open areas
-for xy in [(10.0, 10.0), (20.0, 14.0), (24.0, 25.0), (12.0, 25.0), (40.0, 9.0), (6.0, 33.5), (45.0, 39.5),
-           (50.0, 34.5), (30.7, 39.3), (36.0, 38.5), (16.0, 6.5), (66.0, 34.0), (62.5, 12.0), (78.5, 24.5),
-           (68.0, 41.0), (78.6, 31.0)]:
+for xy in [(14.0, 16.0), (8.0, 25.0), (26.0, 16.0), (36.0, 18.0), (36.0, 30.0), (40.0, 9.0), (42.5, 33.0),
+           (54.0, 31.0), (48.0, 36.0), (66.6, 30.0), (60.0, 18.0)]:
     via(xy, "GND")
 
 # ---------------------------------------------------------------- design rules + fill
