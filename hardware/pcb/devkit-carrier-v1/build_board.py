@@ -3,7 +3,7 @@
 #
 # Layout (80 x 42 mm): DevKit lies along the board, USB flush with the left edge, antenna to the right.
 # Servo headers sit in a row under the DevKit, each straight below the pin that drives it.
-# Spare I/O + OLED headers run along the top edge; regulator, bulk cap, switch pads and XT30 fill the right end.
+# Spare I/O + OLED headers run along the top edge; regulator, bulk cap, switch pads and battery pads fill the right end.
 import os
 import pcbnew
 from pcbnew import VECTOR2I, FromMM
@@ -119,11 +119,10 @@ C1P = (62.25, 23.5)
 place("C1", "Capacitor_THT", "CP_Radial_D8.0mm_P3.50mm", C1P, (1, 0),
       "470uF 16V", {1: "+5V", 2: "GND"}, ref_off=(64.0, 28.6))
 
-# XT30 battery input, mating face at the right edge (footprint: pad 2 = +, pad 1 = -)
-XT1 = (66.4, 37.5)
-XT2 = (XT1[0], XT1[1] - 5.0)
-place("J6", "Connector_AMASS", "AMASS_XT30PW-M_1x02_P2.50mm_Horizontal", XT1, (0, -1),
-      "XT30PW-M", {1: "GND", 2: "VBAT"}, show_ref=False)
+# Battery pigtail pads (16-18 AWG, e.g. an XT30 pigtail): square pad = +, round pad = -
+BATP, BATN = (74.5, 30.5), (74.5, 30.5 + 7.8)
+place("J6", "Connector_Wire", "SolderWire-1.5sqmm_1x02_P7.8mm_D1.7mm_OD3.9mm", BATP, (0, 1),
+      "Battery pigtail", {1: "VBAT", 2: "GND"}, show_ref=False)
 
 # Power switch wire pads (bridge with a wire if no switch)
 SW1, SW2 = (60.8, 37.5), (55.4, 37.5)
@@ -182,8 +181,8 @@ track([(kx(13), Y5), (1.5, Y5), (1.5, YT), (kx(15), YT)], "+5V", PWR_W)
 track([(XU, uy(5)), (52.8, uy(5)), (52.8, Y5), (kx(1), Y5)], "+5V", 2.0, B)
 track([C1P, (C1P[0], uy(5)), (XU, uy(5))], "+5V", 1.2)
 
-# Battery: XT30 + -> switch -> regulator VIN
-track([XT2, (SW1[0], XT2[1]), SW1], "VBAT", 1.2)
+# Battery: pigtail + -> switch -> regulator VIN
+track([BATP, (SW1[0], BATP[1]), SW1], "VBAT", 1.2)
 track([SW2, (SW2[0], uy(2)), (XU, uy(2))], "VBAT_SW", 1.0)
 
 # Battery sense: switched battery along the bottom edge (bottom layer) up to R1; divider node to GPIO34
@@ -263,7 +262,9 @@ for n, s in enumerate(["EN", "VIN", "GND", "GND", "OUT"]):
     text(s, XU + 1.6, uy(n + 1), 0.8, just="left")
 # Power
 text("SWITCH", (SW1[0] + SW2[0]) / 2, 40.7, 0.8)
-text("BATT 3S", 75.0, 27.6, 0.9)
+text("BATT 3S", BATP[0], 27.0, 0.9)
+text("BAT+", BATP[0] - 2.6, BATP[1], 0.9, just="right")
+text("BAT-", BATN[0] - 2.6, BATN[1], 0.9, just="right")
 text("BAT->IO34 x5.55", 18.0, 26.2, 0.8)
 
 # ---------------------------------------------------------------- zones
@@ -301,7 +302,7 @@ board.Add(k)
 
 # GND stitching vias in open areas
 for xy in [(10.0, 10.0), (20.0, 14.0), (24.0, 25.0), (12.0, 25.0), (40.0, 9.0), (6.0, 33.5), (45.0, 39.0),
-           (50.0, 34.0), (57.0, 30.0), (57.5, 12.0), (69.0, 22.0), (78.5, 3.0), (72.0, 41.0), (64.0, 30.5),
+           (50.0, 34.0), (57.0, 30.0), (57.5, 12.0), (69.0, 22.0), (78.5, 3.0), (70.0, 41.0), (65.0, 34.5),
            (30.7, 39.3), (36.0, 38.5), (16.0, 6.5)]:
     via(xy, "GND")
 

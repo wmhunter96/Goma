@@ -1,7 +1,7 @@
 # Sesame DevKit Carrier v1
 
 Plug-in carrier board for a **30-pin ESP32 DevKit (DOIT DevKit V1 style, 1.0" / 25.4 mm between pin rows)**.
-Replaces hand wiring: 3S battery in, onboard 5V/5A regulator, 8 servo headers, OLED header, battery voltage sense, spare I/O.
+Replaces hand wiring: 3S battery in (solder pads for a pigtail), onboard 5V/5A regulator, 8 servo headers, OLED header, battery voltage sense, spare I/O.
 
 - Board: **80 × 42 mm**, 2 layers, 1.6 mm, all through-hole
 - The DevKit lies along the board with its **USB port flush with the left edge**, so leave an opening in the body there for flashing
@@ -20,9 +20,9 @@ Replaces hand wiring: 3S battery in, onboard 5V/5A regulator, 8 servo headers, O
  ││ ESP32 DevKit (plugs into two 1×15 sockets)   │ANT│ Pololu D24V50F5      │ │
  ││<- USB          battery divider underneath    │   └──────────────────────┘ │
  │└──────────────────────────────────────────────┘ ◯   (C1)               ◯   │
- │   S ▪▪▪▪▪ ▪▪ ▪   servo headers, each under                    ┌── XT30    │
- │   + ▪▪▪▪▪ ▪▪ ▪   the DevKit pin that drives it   SW ▪ ▪  + ▪  │ (battery) │
- │ ◯ - ▪▪▪▪▪ ▪▪ ▪                                           - ▪  └──         │
+ │   S ▪▪▪▪▪ ▪▪ ▪   servo headers, each under                       BAT+ ■   │
+ │   + ▪▪▪▪▪ ▪▪ ▪   the DevKit pin that drives it   SW ● ●               │
+ │ ◯ - ▪▪▪▪▪ ▪▪ ▪                                                   BAT- ●   │
  │    R1 R2 R4 R3 L3 L4 L2  L1                                                │
  └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -37,7 +37,7 @@ Upload `sesame-devkit-carrier-gerbers.zip`. Settings: 2 layers, 80 × 42 mm, 1.6
 |---|---|---|---|
 | J1, J2 | 1×15 female header, 2.54 mm, 8.5 mm tall | 2 | DevKit plugs in here |
 | U1 | Pololu D24V50F5 (5V 5A step-down, #2851) | 1 | Solder straight into the board on its included 5-pin header. EN is left unconnected (pulled up on the module) |
-| J6 | Amass XT30PW-M (right-angle PCB male) | 1 | Mates with the battery's XT30 |
+| J6 | Battery pigtail pads (3.9 mm pads, 2.15 mm holes) | — | Solder a 16–18 AWG XT30 pigtail (female, to mate with the battery). Square pad = BAT+. Hot-glue or zip-tie the wires so they can't flex at the joint |
 | SW1 | Wire pads for the power switch | — | 18 AWG to your rocker switch. No switch? Bridge the two pads with wire |
 | S1–S8 | 1×3 male header, 2.54 mm | 8 | Servo plugs. Can be cut from 40-pin strips |
 | J3 | 1×4 male header | 1 | OLED: D C V G = SDA, SCL, 3V3, GND |
@@ -66,7 +66,7 @@ Servo headers are **S + −** from the DevKit outward: orange toward the DevKit,
 ## Before you power it
 
 1. **Check your DevKit's printed labels** against the silkscreen: USB toward the left edge, D23 at the antenna end of the row nearest the servo headers.
-2. **XT30 polarity:** the footprint puts **+ on the pad nearer the capacitor** (marked +). Confirm against the + and − markings on your battery's plug before soldering J6. The Pololu module has reverse-voltage protection, but check anyway.
+2. **Pigtail polarity:** red to the square **BAT+** pad, black to **BAT−**. Plug the pigtail into the battery and check with a multimeter before soldering. The Pololu module has reverse-voltage protection, but check anyway.
 3. With nothing plugged in, use continuity mode: 5V to GND, and battery + to GND, must **not** beep.
 4. First power-up with the DevKit only, no servos. Measure 5V at the servo + pins before plugging servos in.
 
