@@ -160,7 +160,7 @@ place("C1", "Capacitor_THT", "CP_Radial_D8.0mm_P3.50mm", C1P, (1, 0),
       "470uF 16V", {1: "+5V", 2: "GND"}, ref_off=(45.8, 27.0))
 
 # Battery pigtail pads (16-18 AWG, e.g. an XT30 pigtail): square pad = +, round pad = -
-BATP, BATN = (63.0, 26.5), (63.0, 26.5 + 7.8)
+BATP, BATN = (63.0, 25.5), (63.0, 25.5 + 7.8)
 place("J6", "Connector_Wire", "SolderWire-1.5sqmm_1x02_P7.8mm_D1.7mm_OD3.9mm", BATP, (0, 1),
       "Battery pigtail", {1: "VBAT", 2: "GND"}, show_ref=False)
 
@@ -192,11 +192,13 @@ place("C2", "Capacitor_THT", "C_Disc_D5.0mm_W2.5mm_P5.00mm", C2T, (0, 1),
 # straight under them (Pololu drawing: 2.18 mm holes at (2.2, 2.2) and (15.7, 18.2) from the module's bottom-left),
 # so one screw clamps module, a printed standoff and the carrier together.
 # (x, y, keep-out radius = screw head radius + 0.5 mm)
-HOLES = [(8.85, 2.2, 3.0),    # top-left, between servo headers L1 and L2
+HOLES = [(8.85, 2.95, 3.0),   # top-left, between servo headers L1 and L2
          (3.8, 30.0, 3.0),    # bottom-left, under the DevKit's left end
-         (40.5, 2.2, 3.0),    # top-middle, right of the servo block
+         (40.5, 2.95, 3.0),   # top-middle, right of the servo block
          (31.0, 16.5, 3.0),   # middle, under the DevKit
-         (66.6, 40.0, 3.0)]   # bottom-right corner
+         (66.05, 39.05, 3.0)] # bottom-right corner
+# Every M2.5 hole is >= 2.95 mm from the board edge, so its footprint courtyard (a 5.0 mm pan head plus margin)
+# stays on the board.
 POLOLU_HOLES = [(U_X0 + 2.2, U_Y0 + 20.3 - 2.2, 2.4), (U_X0 + 15.7, U_Y0 + 20.3 - 18.2, 2.4)]
 for ref, (x, y, r) in [("H%d" % (i + 1), h) for i, h in enumerate(HOLES)] + [("HP%d" % (i + 1), h) for i, h in enumerate(POLOLU_HOLES)]:
     fp = load("MountingHole", "MountingHole_2.7mm_M2.5" if r == 3.0 else "MountingHole_2.2mm_M2")
@@ -234,7 +236,7 @@ for name, sig, k in SERVOS:
     track([(kx(k), YR), (kx(k), YS)], sig, SIG_W)
 # +5V rail through the servo + pins, on both layers for peak servo current. Between L1 and L2 it dips down to stay
 # clear of the top-left mounting hole's screw head.
-RAIL = [(kx(1), Y5), (4.3, Y5), (5.6, 6.6), (12.1, 6.6), (13.4, Y5), (kx(13), Y5)]
+RAIL = [(kx(1), Y5), (4.3, Y5), (5.6, 7.0), (12.1, 7.0), (13.4, Y5), (kx(13), Y5)]
 track(RAIL, "+5V", 2.0)
 track(RAIL, "+5V", 2.0, B)
 # Regulator OUT -> servo rail and DevKit VIN on the bottom layer; bulk cap tees in
@@ -329,7 +331,7 @@ for n, s in enumerate(["EN", "VIN", "GND", "GND", "OUT"]):
     text(s, ux(n + 1), UY - 1.4, 0.8, angle=90, just="left")
 # Power
 text("SWITCH", (SW1[0] + SW2[0]) / 2, 41.0, 0.8)
-text("BATT 3S", BATP[0], 23.7, 0.9)
+text("BATT 3S", BATP[0], 22.75, 0.9)
 text("BAT+", BATP[0], BATP[1] + 3.0, 0.9)
 text("BAT-", BATN[0], BATN[1] + 2.9, 0.9)
 

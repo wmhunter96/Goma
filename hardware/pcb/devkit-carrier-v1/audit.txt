@@ -16,14 +16,14 @@ PASS servo 5V rail: 2.0 mm on both layers carries 7.9 A (need ~5 A peak)
 NOTE other +5V branches: 1.5 mm to DevKit VIN (3.2 A, ESP32 needs 0.5 A), 1.2 mm cap tee, 0.8 mm to the spare 5V header pin (2.0 A)
 PASS GND fill on F.Cu: 9 region(s); every GND pad reaches it
 PASS GND fill on B.Cu: 7 region(s); every GND pad reaches it
-PASS SW1: drill [1.75] mm vs lead ~1.2 mm
-PASS C2: drill [0.8] mm vs lead ~0.6 mm
-PASS C3: drill [0.8] mm vs lead ~0.5 mm
-PASS R1: drill [0.8] mm vs lead ~0.6 mm
-PASS J1: drill [1.0] mm vs lead ~0.64 mm
-PASS C1: drill [0.8] mm vs lead ~0.6 mm
 PASS U1: drill [1.0] mm vs lead ~0.64 mm
+PASS C3: drill [0.8] mm vs lead ~0.5 mm
+PASS J1: drill [1.0] mm vs lead ~0.64 mm
+PASS C2: drill [0.8] mm vs lead ~0.6 mm
+PASS R1: drill [0.8] mm vs lead ~0.6 mm
 PASS J6: drill [2.15] mm vs lead ~1.6 mm
+PASS C1: drill [0.8] mm vs lead ~0.6 mm
+PASS SW1: drill [1.75] mm vs lead ~1.2 mm
 PASS C1 pad 1 (+, marked on silkscreen) is +5V
 PASS C3 pad 1 (+, marked on silkscreen) is switched battery
 PASS C1 16 V rating vs 5.2 V max regulator output (3x margin)
@@ -38,12 +38,19 @@ PASS smallest PTH annular ring 0.35 mm (J1) (PCBWay min 0.15)
 PASS silkscreen text height >= 0.8 mm (46 texts)
 PASS silkscreen lines >= 0.15 mm, face-art pixels >= 0.164 mm (PCBWay legend min 0.15)
 PASS closest pins on neighbouring headers/sockets 2.54 mm apart (>= 2.54 grid, so 2.54 mm bodies fit)
-PASS H2 (MountingHole_2.7mm_M2.5) at (3.8, 30.0): nearest non-GND copper 3.35 mm (SCL), screw head needs 3.0
-PASS H1 (MountingHole_2.7mm_M2.5) at (8.8, 2.2): nearest non-GND copper 3.40 mm (+5V), screw head needs 3.0
-PASS HP2 (MountingHole_2.2mm_M2) at (62.7, 3.1): nearest non-GND copper 15.93 mm (+5V), screw head needs 2.4
-PASS H5 (MountingHole_2.7mm_M2.5) at (66.6, 40.0): nearest non-GND copper 6.24 mm (VBAT), screw head needs 3.0
-PASS H4 (MountingHole_2.7mm_M2.5) at (31.0, 16.5): nearest non-GND copper 3.07 mm (+3V3), screw head needs 3.0
+PASS H5 (MountingHole_2.7mm_M2.5) at (66.0, 39.0): nearest non-GND copper 5.45 mm (VBAT), screw head needs 3.0
 PASS HP1 (MountingHole_2.2mm_M2) at (49.2, 19.1): nearest non-GND copper 2.80 mm (U1.1), screw head needs 2.4
-PASS H3 (MountingHole_2.7mm_M2.5) at (40.5, 2.2): nearest non-GND copper 4.90 mm (+5V), screw head needs 3.0
+PASS H3 (MountingHole_2.7mm_M2.5) at (40.5, 3.0): nearest non-GND copper 4.54 mm (+5V), screw head needs 3.0
+PASS H1 (MountingHole_2.7mm_M2.5) at (8.8, 3.0): nearest non-GND copper 3.05 mm (+5V), screw head needs 3.0
+PASS HP2 (MountingHole_2.2mm_M2) at (62.7, 3.1): nearest non-GND copper 15.93 mm (+5V), screw head needs 2.4
+PASS H4 (MountingHole_2.7mm_M2.5) at (31.0, 16.5): nearest non-GND copper 3.07 mm (+3V3), screw head needs 3.0
+PASS H2 (MountingHole_2.7mm_M2.5) at (3.8, 30.0): nearest non-GND copper 3.35 mm (SCL), screw head needs 3.0
+PASS H5 pan-head screw (r 2.5 mm) stays 0.50 mm inside the board edge
+PASS HP1 pan-head screw (r 1.9 mm) stays 17.25 mm inside the board edge
+PASS H3 pan-head screw (r 2.5 mm) stays 0.50 mm inside the board edge
+PASS H1 pan-head screw (r 2.5 mm) stays 0.50 mm inside the board edge
+PASS HP2 pan-head screw (r 1.9 mm) stays 1.25 mm inside the board edge
+PASS H4 pan-head screw (r 2.5 mm) stays 14.05 mm inside the board edge
+PASS H2 pan-head screw (r 2.5 mm) stays 1.35 mm inside the board edge
 
 NO FAILURES
