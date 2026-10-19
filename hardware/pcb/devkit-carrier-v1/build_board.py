@@ -159,8 +159,15 @@ place("R2", "Resistor_THT", "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
 place("C2", "Capacitor_THT", "C_Disc_D5.0mm_W2.5mm_P5.00mm", C2T, (0, 1),
       "100nF", {1: "BAT_SENSE", 2: "GND"}, ref_off=(C2T[0] + 2.0, 23.5))
 
-# Mounting holes (M2.5), none near the antenna end
-for i, (x, y) in enumerate([(40.5, 2.2), (66.6, 12.0), (66.6, 40.0), (31.0, 16.5)]):
+# Mounting holes (M2.5): all four corners plus top-middle and the DevKit's middle, so no edge cantilevers when
+# servos, the OLED or the DevKit are pushed on. Left-side holes sit in the gaps between the left-end traces.
+HOLES = [(8.85, 2.2),    # top-left, between servo headers L1 and L2
+         (7.0, 31.0),    # bottom-left, under the DevKit between the SCL (back) and 3V3 (front) traces
+         (40.5, 2.2),    # top-middle, right of the servo block
+         (31.0, 16.5),   # middle, under the DevKit
+         (66.8, 3.2),    # top-right corner
+         (66.6, 40.0)]   # bottom-right corner
+for i, (x, y) in enumerate(HOLES):
     fp = load("MountingHole", "MountingHole_2.7mm_M2.5")
     board.Add(fp)
     fp.SetReference("H%d" % (i + 1))
@@ -263,7 +270,7 @@ for a, b in [((0.15, DEV_Y0), (DEV_X1, DEV_Y0)), ((DEV_X1, DEV_Y0), (DEV_X1, DEV
 text("ESP32 DevKit (30-pin)", 15.0, 16.5, 1.2)
 text("<- ANTENNA overhangs", 9.0, 19.0, 0.9, just="left")
 text("USB ->", 39.0, 16.5, 1.0)
-text("SESAME CARRIER v1", 2.0, 31.5, 0.9, just="left")
+text("SESAME CARRIER v1", 10.0, 31.5, 0.9, just="left")
 text("BAT->IO34 x5.55", 35.0, 34.6, 0.8)
 # Servo labels above each column, S/+/- legend to the right of the block
 for name, sig, k in SERVOS:
@@ -346,7 +353,7 @@ def pixel_art(px, x0, y0, size, layer, mirror=False):
 CUTE = face_pixels("cute")
 # Back: big, mirrored so it reads correctly from underneath, in the open area under the DevKit
 pixel_art(CUTE, 1.5, 15.5, 0.235, pcbnew.B_SilkS, mirror=True)
-for s_, y_, sz in [("SESAME", 26.0, 2.2), ("DevKit carrier v1", 29.6, 1.2)]:
+for s_, y_, sz in [("SESAME", 26.0, 2.2), ("DevKit carrier v1", 28.6, 1.2)]:
     t = pcbnew.PCB_TEXT(board)
     t.SetText(s_)
     t.SetPosition(P(15.0, y_))

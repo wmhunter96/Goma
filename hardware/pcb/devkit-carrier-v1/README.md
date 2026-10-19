@@ -53,7 +53,7 @@ Upload `sesame-devkit-carrier-gerbers.zip`. Settings: 2 layers, 69 × 42 mm, 1.6
 | R1 | 100 kΩ ¼ W (1% preferred) | 1 | Battery divider top |
 | R2 | 22 kΩ ¼ W (1% preferred) | 1 | Battery divider bottom |
 | C2 | 100 nF ceramic, 5 mm pitch | 1 | Sense filter |
-| H1–H4 | M2.5 screws / standoffs | 4 | Nylon screws recommended (they sit near traces). One sits under the DevKit, so fit it before plugging the DevKit in |
+| H1–H6 | M2.5 screws / standoffs | 6 | All four corners, top-middle, and two under the DevKit (fit those before plugging the DevKit in). Nylon screws recommended: they sit close to traces |
 
 Solder R1, R2 and C2 **before** the DevKit sockets; they sit underneath the DevKit and must stay under ~7 mm tall.
 
