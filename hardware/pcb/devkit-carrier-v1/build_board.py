@@ -130,14 +130,14 @@ SW1, SW2 = (60.8, 37.5), (55.4, 37.5)
 place("SW1", "Connector_Wire", "SolderWire-1sqmm_1x02_P5.4mm_D1.4mm_OD2.7mm", SW1, (-1, 0),
       "Switch", {1: "VBAT", 2: "VBAT_SW"}, show_ref=False)
 
-# Battery sense divider under the DevKit: 100k / 27k -> GPIO34, 100nF filter
+# Battery sense divider under the DevKit: 100k / 22k -> GPIO34 (12.6 V -> 2.27 V, inside the ADC's accurate range), 100nF filter
 R1T, R1B = (30.9, 15.5), (30.9, 15.5 + 10.16)
 R2T, R2B = (34.0, 15.5), (34.0, 15.5 + 10.16)
 C2T = (37.0, 18.0)
 place("R1", "Resistor_THT", "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", R1B, (0, -1),
       "100k", {1: "VBAT_SW", 2: "BAT_SENSE"}, ref_off=(28.6, 20.6))
 place("R2", "Resistor_THT", "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", R2T, (0, 1),
-      "27k", {1: "BAT_SENSE", 2: "GND"}, ref_off=(34.0, 27.6))
+      "22k", {1: "BAT_SENSE", 2: "GND"}, ref_off=(34.0, 27.6))
 place("C2", "Capacitor_THT", "C_Disc_D5.0mm_W2.5mm_P5.00mm", C2T, (0, 1),
       "100nF", {1: "BAT_SENSE", 2: "GND"}, ref_off=(39.0, 20.5))
 
@@ -176,10 +176,10 @@ SIG_W, PWR_W = 0.3, 1.5
 for name, sig, k in SERVOS:
     track([(kx(k), YB), (kx(k), YS)], sig, SIG_W)
 # +5V rail through the servo + pins, then up the left edge to DevKit VIN and the IO header
-track([(kx(1), Y5), (kx(13), Y5)], "+5V", 1.2)
+track([(kx(1), Y5), (kx(13), Y5)], "+5V", 2.0)
 track([(kx(13), Y5), (1.5, Y5), (1.5, YT), (kx(15), YT)], "+5V", PWR_W)
 # Regulator OUT -> servo rail on the bottom layer (crosses under the VIN feed), bulk cap on top
-track([(XU, uy(5)), (52.5, uy(5)), (52.5, Y5), (kx(1), Y5)], "+5V", PWR_W, B)
+track([(XU, uy(5)), (52.8, uy(5)), (52.8, Y5), (kx(1), Y5)], "+5V", 2.0, B)
 track([C1P, (C1P[0], uy(5)), (XU, uy(5))], "+5V", 1.2)
 
 # Battery: XT30 + -> switch -> regulator VIN
@@ -264,7 +264,7 @@ for n, s in enumerate(["EN", "VIN", "GND", "GND", "OUT"]):
 # Power
 text("SWITCH", (SW1[0] + SW2[0]) / 2, 40.7, 0.8)
 text("BATT 3S", 75.0, 27.6, 0.9)
-text("BAT->IO34 x4.70", 18.0, 26.2, 0.8)
+text("BAT->IO34 x5.55", 18.0, 26.2, 0.8)
 
 # ---------------------------------------------------------------- zones
 def zone(layer):

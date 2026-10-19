@@ -44,7 +44,7 @@ Upload `sesame-devkit-carrier-gerbers.zip`. Settings: 2 layers, 80 × 42 mm, 1.6
 | J4, J5 | 1×6 + 1×3 male header | 1 each | Spare I/O (optional) |
 | C1 | 470 µF 16 V electrolytic, 8 mm dia, 3.5 mm pitch, ≤ 12 mm tall | 1 | 5V bulk cap. Mind polarity (+ marked) |
 | R1 | 100 kΩ ¼ W (1% preferred) | 1 | Battery divider top |
-| R2 | 27 kΩ ¼ W (1% preferred) | 1 | Battery divider bottom |
+| R2 | 22 kΩ ¼ W (1% preferred) | 1 | Battery divider bottom |
 | C2 | 100 nF ceramic, 5 mm pitch | 1 | Sense filter |
 | H1–H4 | M2.5 screws / standoffs | 4 | Nylon screws or washers recommended near traces |
 
@@ -57,7 +57,7 @@ Solder R1, R2 and C2 **before** the DevKit sockets; they sit underneath the DevK
 | Servo L1 / L2 / L3 / L4 | D23 / D19 / TX2 (17) / D18 | S headers, labelled |
 | Servo R1 / R2 / R3 / R4 | D15 / D2 / RX2 (16) / D4 | S headers, labelled |
 | OLED SDA / SCL | D21 / D22 | J3 |
-| Battery sense | D34 (GPIO34, ADC1) | via 100k/27k divider, after the switch |
+| Battery sense | D34 (GPIO34, ADC1) | via 100k/22k divider, after the switch |
 | Spare I/O | D32 D33 D25 D26 D27 D14 D13, GND, 5V | J4, J5 (each pin directly above its DevKit pin) |
 | 5V in | VIN | from U1 |
 
@@ -72,11 +72,11 @@ Servo headers are **S + −** from the DevKit outward: orange toward the DevKit,
 
 ## Battery reading in firmware
 
-`V_battery = V_GPIO34 × (100k + 27k) / 27k = V_GPIO34 × 4.70`
+`V_battery = V_GPIO34 × (100k + 22k) / 22k = V_GPIO34 × 5.545` (12.6 V full charge reads as 2.27 V, inside the ESP32 ADC's accurate 0.15–2.45 V range)
 
 ```cpp
 float batteryVolts() {
-  return analogReadMilliVolts(34) * 4.7037f / 1000.0f;   // 12.6 V full, ~10.5 V time to charge (3S)
+  return analogReadMilliVolts(34) * 5.5455f / 1000.0f;   // 12.6 V full, ~10.5 V time to charge (3S)
 }
 ```
 
