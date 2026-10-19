@@ -230,5 +230,30 @@ for i, a in enumerate(grid_refs):
                 worst = min(worst, math.hypot(ax - bx, ay - by))
 check(worst >= 2.54 - 1e-6, f"closest pins on neighbouring headers/sockets {worst:.2f} mm apart (>= 2.54 grid, so 2.54 mm bodies fit)")
 
+
+# ---------------------------------------------------------------- 12. screw heads: only ground copper within 3 mm of a mounting hole
+def seg_dist(pt, a, c):
+    dx, dy = c[0] - a[0], c[1] - a[1]
+    t = 0 if dx == dy == 0 else max(0, min(1, ((pt[0]-a[0])*dx + (pt[1]-a[1])*dy) / (dx*dx + dy*dy)))
+    return math.hypot(pt[0] - (a[0] + t*dx), pt[1] - (a[1] + t*dy))
+for h in [f for f in board.GetFootprints() if f.GetReference().startswith("H")]:
+    c = (mm(h.GetPosition().x), mm(h.GetPosition().y))
+    best = (99, "")
+    for t in board.GetTracks():
+        if t.GetNetname() == "GND":
+            continue
+        if t.GetClass() == "PCB_TRACK":
+            d = seg_dist(c, (mm(t.GetStart().x), mm(t.GetStart().y)), (mm(t.GetEnd().x), mm(t.GetEnd().y))) - mm(t.GetWidth()) / 2
+        else:
+            d = math.hypot(c[0] - mm(t.GetPosition().x), c[1] - mm(t.GetPosition().y)) - mm(t.GetWidth(pcbnew.F_Cu)) / 2
+        best = min(best, (d, t.GetNetname()))
+    for fp in board.GetFootprints():
+        for p in fp.Pads():
+            if p.GetNetname() and p.GetNetname() != "GND":
+                bb = p.GetBoundingBox()
+                d = math.hypot(c[0] - mm(p.GetPosition().x), c[1] - mm(p.GetPosition().y)) - max(mm(bb.GetWidth()), mm(bb.GetHeight())) / 2
+                best = min(best, (d, fp.GetReference() + "." + p.GetNumber()))
+    check(best[0] >= 3.0, f"{h.GetReference()} at ({c[0]:.1f}, {c[1]:.1f}): nearest non-GND copper {best[0]:.2f} mm ({best[1]}), screw head needs 3.0")
+
 print("\n".join(notes))
 print("\n".join(fails) if fails else "\nNO FAILURES")

@@ -6,6 +6,7 @@
 # With the antenna to the left, the DevKit's "right" pin row (servo signals) is on top, so the servo
 # headers run along the top edge, each straight above its pin; spare I/O + OLED run along the bottom edge.
 # Regulator, bulk cap, switch pads and battery pads fill the right end.
+import math
 import os
 import pcbnew
 from pcbnew import VECTOR2I, FromMM
@@ -162,7 +163,7 @@ place("C2", "Capacitor_THT", "C_Disc_D5.0mm_W2.5mm_P5.00mm", C2T, (0, 1),
 # Mounting holes (M2.5): all four corners plus top-middle and the DevKit's middle, so no edge cantilevers when
 # servos, the OLED or the DevKit are pushed on. Left-side holes sit in the gaps between the left-end traces.
 HOLES = [(8.85, 2.2),    # top-left, between servo headers L1 and L2
-         (7.0, 31.0),    # bottom-left, under the DevKit between the SCL (back) and 3V3 (front) traces
+         (12.4, 31.0),   # bottom-left, under the DevKit in the clear column between the 3V3 and battery-sense traces
          (40.5, 2.2),    # top-middle, right of the servo block
          (31.0, 16.5),   # middle, under the DevKit
          (66.8, 3.2),    # top-right corner
@@ -200,12 +201,14 @@ SIG_W = 0.3
 # Servo signals: straight up from the DevKit pin
 for name, sig, k in SERVOS:
     track([(kx(k), YR), (kx(k), YS)], sig, SIG_W)
-# +5V rail through the servo + pins
-track([(kx(1), Y5), (kx(13), Y5)], "+5V", 2.0)
-track([(kx(1), Y5), (kx(13), Y5)], "+5V", 2.0, B)   # doubled on the back for peak servo current
+# +5V rail through the servo + pins, on both layers for peak servo current. Between L1 and L2 it dips down to stay
+# clear of the top-left mounting hole's screw head.
+RAIL = [(kx(1), Y5), (4.3, Y5), (5.6, 6.6), (12.1, 6.6), (13.4, Y5), (kx(13), Y5)]
+track(RAIL, "+5V", 2.0)
+track(RAIL, "+5V", 2.0, B)
 # Regulator OUT -> servo rail and DevKit VIN on the bottom layer; bulk cap tees in
 XF = 44.0
-track([(ux(5), UY), (ux(5), 22.3), (XF, 22.3), (XF, Y5), (kx(13), Y5)], "+5V", 2.0, B)
+track([(ux(5), UY), (ux(5), 22.3), (XF, 22.3), (XF, 9.5), (35.5, 9.5), (35.5, Y5), (kx(13), Y5)], "+5V", 2.0, B)
 track([(XF, 22.3), (XF, YL), (kx(15), YL)], "+5V", 1.5, B)
 track([C1P, (C1P[0], 22.3)], "+5V", 1.2, B)
 track([(kx(15), YL), (kx(15), YBOT)], "+5V", 0.8)
@@ -223,7 +226,7 @@ track([R1T, R2T, C2T], "BAT_SENSE", SIG_W)
 
 # I2C to the OLED header: bottom layer under the DevKit, passing between the bottom-row socket pads
 track([(kx(2), YR), (kx(2), 35.5), (XO[0], 35.5), (XO[0], YBOT)], "SCL", SIG_W, B)
-track([(kx(5), YR), (kx(5), 33.5), (XO[1], 33.5), (XO[1], YBOT)], "SDA", SIG_W, B)
+track([(kx(5), YR), (kx(5), 12.9), (XO[1], 12.9), (XO[1], YBOT)], "SDA", SIG_W, B)
 # 3V3 on top: from DevKit 3V3 along just inside the top row, then down between pins to the OLED header
 track([(kx(15), YR), (kx(15), YR + 1.6), (XO[2], YR + 1.6), (XO[2], YBOT)], "+3V3", SIG_W)
 
@@ -270,7 +273,7 @@ for a, b in [((0.15, DEV_Y0), (DEV_X1, DEV_Y0)), ((DEV_X1, DEV_Y0), (DEV_X1, DEV
 text("ESP32 DevKit (30-pin)", 15.0, 16.5, 1.2)
 text("<- ANTENNA overhangs", 9.0, 19.0, 0.9, just="left")
 text("USB ->", 39.0, 16.5, 1.0)
-text("SESAME CARRIER v1", 10.0, 31.5, 0.9, just="left")
+text("SESAME CARRIER v1", 15.5, 31.5, 0.9, just="left")
 text("BAT->IO34 x5.55", 35.0, 34.6, 0.8)
 # Servo labels above each column, S/+/- legend to the right of the block
 for name, sig, k in SERVOS:
@@ -356,7 +359,7 @@ pixel_art(CUTE, 1.5, 15.5, 0.235, pcbnew.B_SilkS, mirror=True)
 for s_, y_, sz in [("SESAME", 26.0, 2.2), ("DevKit carrier v1", 28.6, 1.2)]:
     t = pcbnew.PCB_TEXT(board)
     t.SetText(s_)
-    t.SetPosition(P(15.0, y_))
+    t.SetPosition(P(22.0, y_))
     t.SetLayer(pcbnew.B_SilkS)
     t.SetTextSize(VECTOR2I(FromMM(sz), FromMM(sz)))
     t.SetTextThickness(FromMM(sz * 0.15))
@@ -382,6 +385,23 @@ def zone(layer):
     board.Add(z)
 zone(F)
 zone(B)
+
+# Screw-head keep-outs: nothing but ground fill within 3 mm of a mounting hole (M2.5 head radius 2.5 mm + margin)
+for (hx, hy) in HOLES:
+    ka = pcbnew.ZONE(board)
+    ka.SetIsRuleArea(True)
+    ka.SetLayerSet(pcbnew.LSET.AllCuMask())
+    ka.SetDoNotAllowTracks(True)
+    ka.SetDoNotAllowVias(True)
+    ka.SetDoNotAllowZoneFills(False)
+    ka.SetDoNotAllowPads(False)
+    ka.SetDoNotAllowFootprints(False)
+    ko = ka.Outline()
+    ko.NewOutline()
+    for i in range(32):
+        a = 2 * math.pi * i / 32
+        ko.Append(FromMM(hx + 3.0 * math.cos(a)), FromMM(hy + 3.0 * math.sin(a)))
+    board.Add(ka)
 
 # GND stitching vias in open areas
 for xy in [(28.5, 33.0), (42.3, 28.0), (42.5, 33.0), (54.0, 31.0), (66.6, 30.0), (60.0, 18.0)]:
