@@ -7,3 +7,10 @@
   (constraint courtyard_clearance (min 0mm))
   (condition "(A.Reference == 'S?' || A.Reference == 'J?') && (B.Reference == 'S?' || B.Reference == 'J?')")
   (severity ignore))
+
+# The Pololu module's own M2 holes (HP1/HP2) sit beside its 5-pin header by Pololu's design; a ~4 mm
+# standoff at HP1 still clears the header plastic. Only the courtyard margins overlap.
+(rule "Pololu holes beside its header"
+  (constraint courtyard_clearance (min 0mm))
+  (condition "(A.Reference == 'U1' && B.Reference == 'HP?') || (A.Reference == 'HP?' && B.Reference == 'U1')")
+  (severity ignore))

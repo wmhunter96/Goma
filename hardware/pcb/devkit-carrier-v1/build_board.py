@@ -160,18 +160,21 @@ place("R2", "Resistor_THT", "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
 place("C2", "Capacitor_THT", "C_Disc_D5.0mm_W2.5mm_P5.00mm", C2T, (0, 1),
       "100nF", {1: "BAT_SENSE", 2: "GND"}, ref_off=(C2T[0] + 2.0, 23.5))
 
-# Mounting holes (M2.5): all four corners plus top-middle and the DevKit's middle, so no edge cantilevers when
-# servos, the OLED or the DevKit are pushed on. Left-side holes sit in the gaps between the left-end traces.
-HOLES = [(8.85, 2.2),    # top-left, between servo headers L1 and L2
-         (12.4, 31.0),   # bottom-left, under the DevKit in the clear column between the 3V3 and battery-sense traces
-         (40.5, 2.2),    # top-middle, right of the servo block
-         (31.0, 16.5),   # middle, under the DevKit
-         (66.8, 3.2),    # top-right corner
-         (66.6, 40.0)]   # bottom-right corner
-for i, (x, y) in enumerate(HOLES):
-    fp = load("MountingHole", "MountingHole_2.7mm_M2.5")
+# Mounting holes. M2.5 board holes at the corners, top-middle and the DevKit's middle, so no edge cantilevers when
+# servos, the OLED or the DevKit are pushed on. The top-right corner is covered by the Pololu's own holes: M2 holes
+# straight under them (Pololu drawing: 2.18 mm holes at (2.2, 2.2) and (15.7, 18.2) from the module's bottom-left),
+# so one screw clamps module, a printed standoff and the carrier together.
+# (x, y, keep-out radius = screw head radius + 0.5 mm)
+HOLES = [(8.85, 2.2, 3.0),    # top-left, between servo headers L1 and L2
+         (3.8, 30.0, 3.0),    # bottom-left, under the DevKit's left end
+         (40.5, 2.2, 3.0),    # top-middle, right of the servo block
+         (31.0, 16.5, 3.0),   # middle, under the DevKit
+         (66.6, 40.0, 3.0)]   # bottom-right corner
+POLOLU_HOLES = [(U_X0 + 2.2, U_Y0 + 20.3 - 2.2, 2.4), (U_X0 + 15.7, U_Y0 + 20.3 - 18.2, 2.4)]
+for ref, (x, y, r) in [("H%d" % (i + 1), h) for i, h in enumerate(HOLES)] + [("HP%d" % (i + 1), h) for i, h in enumerate(POLOLU_HOLES)]:
+    fp = load("MountingHole", "MountingHole_2.7mm_M2.5" if r == 3.0 else "MountingHole_2.2mm_M2")
     board.Add(fp)
-    fp.SetReference("H%d" % (i + 1))
+    fp.SetReference(ref)
     fp.Reference().SetVisible(False)
     fp.Value().SetVisible(False)
     fp.SetPosition(P(x, y))
@@ -208,9 +211,10 @@ track(RAIL, "+5V", 2.0)
 track(RAIL, "+5V", 2.0, B)
 # Regulator OUT -> servo rail and DevKit VIN on the bottom layer; bulk cap tees in
 XF = 44.0
-track([(ux(5), UY), (ux(5), 22.3), (XF, 22.3), (XF, 9.5), (35.5, 9.5), (35.5, Y5), (kx(13), Y5)], "+5V", 2.0, B)
-track([(XF, 22.3), (XF, YL), (kx(15), YL)], "+5V", 1.5, B)
-track([C1P, (C1P[0], 22.3)], "+5V", 1.2, B)
+track([(ux(5), UY), (ux(5), 22.3), (53.5, 22.3), (52.3, 23.5), (XF, 23.5), (XF, 9.5), (35.5, 9.5), (35.5, Y5), (kx(13), Y5)],
+      "+5V", 2.0, B)
+track([(XF, 23.5), (XF, YL), (kx(15), YL)], "+5V", 1.5, B)
+track([C1P, (C1P[0], 23.5)], "+5V", 1.2, B)
 track([(kx(15), YL), (kx(15), YBOT)], "+5V", 0.8)
 
 # Battery: pigtail + -> switch -> regulator VIN
@@ -225,8 +229,8 @@ track([R1T, (16.0, R1T[1]), (16.0, 34.5), (kx(4), 34.5), (kx(4), YL)], "BAT_SENS
 track([R1T, R2T, C2T], "BAT_SENSE", SIG_W)
 
 # I2C to the OLED header: bottom layer under the DevKit, passing between the bottom-row socket pads
-track([(kx(2), YR), (kx(2), 35.5), (XO[0], 35.5), (XO[0], YBOT)], "SCL", SIG_W, B)
-track([(kx(5), YR), (kx(5), 12.9), (XO[1], 12.9), (XO[1], YBOT)], "SDA", SIG_W, B)
+track([(kx(2), YR), (kx(2), 20.0), (10.5, 20.0), (10.5, 33.5), (XO[0], 33.5), (XO[0], YBOT)], "SCL", SIG_W, B)
+track([(kx(5), YR), (kx(5), 35.0), (XO[1], 35.0), (XO[1], YBOT)], "SDA", SIG_W, B)
 # 3V3 on top: from DevKit 3V3 along just inside the top row, then down between pins to the OLED header
 track([(kx(15), YR), (kx(15), YR + 1.6), (XO[2], YR + 1.6), (XO[2], YBOT)], "+3V3", SIG_W)
 
@@ -271,9 +275,7 @@ def text(s, x, y, size=1.0, layer=SILK, angle=0, just=None):
 for a, b in [((0.15, DEV_Y0), (DEV_X1, DEV_Y0)), ((DEV_X1, DEV_Y0), (DEV_X1, DEV_Y1))]:   # bottom edge left off: labels live there
     line(a, b, SILK, 0.15)
 text("ESP32 DevKit (30-pin)", 15.0, 16.5, 1.2)
-text("<- ANTENNA overhangs", 9.0, 19.0, 0.9, just="left")
-text("USB ->", 39.0, 16.5, 1.0)
-text("SESAME CARRIER v1", 15.5, 31.5, 0.9, just="left")
+text("SESAME CARRIER v1", 7.0, 31.5, 0.9, just="left")
 text("BAT->IO34 x5.55", 35.0, 34.6, 0.8)
 # Servo labels above each column, S/+/- legend to the right of the block
 for name, sig, k in SERVOS:
@@ -293,14 +295,6 @@ for x, s in zip(XO, ["C", "D", "V", "G"]):
 text("OLED", (XO[0] + XO[3]) / 2, YL - 2.2, 0.8)
 # Regulator module outline + pin labels
 rect(U_X0, U_Y0, U_X0 + 17.8, U_Y0 + 20.3, SILK, 0.15)
-for hx, hy in [(2.2, 2.2), (15.7, 18.2)]:   # module's own mounting holes (not used), for reference
-    c = pcbnew.PCB_SHAPE(board)
-    c.SetShape(pcbnew.SHAPE_T_CIRCLE)
-    c.SetCenter(P(U_X0 + hx, U_Y0 + 20.3 - hy))
-    c.SetEnd(P(U_X0 + hx + 1.09, U_Y0 + 20.3 - hy))
-    c.SetWidth(FromMM(0.12))
-    c.SetLayer(SILK)
-    board.Add(c)
 text("Pololu", U_X0 + 8.9, 7.0, 0.9)
 text("D24V50F5", U_X0 + 8.9, 9.0, 0.9)
 text("5V 5A", U_X0 + 8.9, 11.0, 0.9)
@@ -386,8 +380,8 @@ def zone(layer):
 zone(F)
 zone(B)
 
-# Screw-head keep-outs: nothing but ground fill within 3 mm of a mounting hole (M2.5 head radius 2.5 mm + margin)
-for (hx, hy) in HOLES:
+# Screw-head keep-outs: nothing but ground fill under a screw head (M2.5: 3.0 mm radius, M2: 2.4 mm)
+for (hx, hy, kr) in HOLES + POLOLU_HOLES:
     ka = pcbnew.ZONE(board)
     ka.SetIsRuleArea(True)
     ka.SetLayerSet(pcbnew.LSET.AllCuMask())
@@ -400,7 +394,7 @@ for (hx, hy) in HOLES:
     ko.NewOutline()
     for i in range(32):
         a = 2 * math.pi * i / 32
-        ko.Append(FromMM(hx + 3.0 * math.cos(a)), FromMM(hy + 3.0 * math.sin(a)))
+        ko.Append(FromMM(hx + kr * math.cos(a)), FromMM(hy + kr * math.sin(a)))
     board.Add(ka)
 
 # GND stitching vias in open areas

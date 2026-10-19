@@ -253,7 +253,8 @@ for h in [f for f in board.GetFootprints() if f.GetReference().startswith("H")]:
                 bb = p.GetBoundingBox()
                 d = math.hypot(c[0] - mm(p.GetPosition().x), c[1] - mm(p.GetPosition().y)) - max(mm(bb.GetWidth()), mm(bb.GetHeight())) / 2
                 best = min(best, (d, fp.GetReference() + "." + p.GetNumber()))
-    check(best[0] >= 3.0, f"{h.GetReference()} at ({c[0]:.1f}, {c[1]:.1f}): nearest non-GND copper {best[0]:.2f} mm ({best[1]}), screw head needs 3.0")
+    need = 3.0 if "M2.5" in h.GetFPIDAsString() else 2.4   # M2.5 head r2.5 / M2 head r1.9, + 0.5 mm
+    check(best[0] >= need, f"{h.GetReference()} ({h.GetFPIDAsString().split(':')[-1]}) at ({c[0]:.1f}, {c[1]:.1f}): nearest non-GND copper {best[0]:.2f} mm ({best[1]}), screw head needs {need}")
 
 print("\n".join(notes))
 print("\n".join(fails) if fails else "\nNO FAILURES")
