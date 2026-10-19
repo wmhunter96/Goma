@@ -35,7 +35,7 @@ is either expected for this design, a tool heuristic that doesn't apply, or a pr
 
 | Finding | Detail | Fix |
 |---|---|---|
-| PM-002 `H5 courtyard overhangs board edge by 0.55mm` | A 5.0 mm M2.5 pan head at H5 would overhang the bottom edge. Checking all holes showed H1 and H3 also overhung the top edge slightly. Root cause: holes were sized for a 4.5 mm socket-head screw. | H1, H3, H5 moved so every M2.5 hole is ≥ 2.95 mm from the edge (pan head + margin); servo 5V rail dip lowered to keep H1's 3 mm copper keep-out. `audit.py` now checks pan-head clearance to the edge. |
+| PM-002 `H5 courtyard overhangs board edge by 0.55mm` | A 5.0 mm M2.5 pan head at H5 would overhang the bottom edge. Checking all holes showed H1 and H3 also overhung the top edge slightly. Holes were sized for 4.5 mm socket heads (the screws actually used), but KiCad's courtyard assumes a 5.0 mm pan head. | H1, H3, H5 moved so every M2.5 hole is ≥ 2.95 mm from the edge (courtyard on the board, ≥ 0.75 mm around a socket head); servo 5V rail dip lowered to keep H1's 3 mm copper keep-out. `audit.py` checks socket-head clearance to the edge (≥ 0.75 mm of board around every M2.5 head). |
 
 ## Reviewed, no change needed
 

@@ -197,8 +197,8 @@ HOLES = [(8.85, 2.95, 3.0),   # top-left, between servo headers L1 and L2
          (40.5, 2.95, 3.0),   # top-middle, right of the servo block
          (31.0, 16.5, 3.0),   # middle, under the DevKit
          (66.05, 39.05, 3.0)] # bottom-right corner
-# Every M2.5 hole is >= 2.95 mm from the board edge, so its footprint courtyard (a 5.0 mm pan head plus margin)
-# stays on the board.
+# Every M2.5 hole is >= 2.95 mm from the board edge, so its footprint courtyard stays on the board. With the
+# socket-head cap screws used here (M2.5 head 4.5 mm, M2 3.8 mm) that leaves >= 0.75 mm of board around each head.
 POLOLU_HOLES = [(U_X0 + 2.2, U_Y0 + 20.3 - 2.2, 2.4), (U_X0 + 15.7, U_Y0 + 20.3 - 18.2, 2.4)]
 for ref, (x, y, r) in [("H%d" % (i + 1), h) for i, h in enumerate(HOLES)] + [("HP%d" % (i + 1), h) for i, h in enumerate(POLOLU_HOLES)]:
     fp = load("MountingHole", "MountingHole_2.7mm_M2.5" if r == 3.0 else "MountingHole_2.2mm_M2")

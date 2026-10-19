@@ -256,7 +256,7 @@ for h in [f for f in board.GetFootprints() if f.GetReference().startswith("H")]:
                 bb = p.GetBoundingBox()
                 d = math.hypot(c[0] - mm(p.GetPosition().x), c[1] - mm(p.GetPosition().y)) - max(mm(bb.GetWidth()), mm(bb.GetHeight())) / 2
                 best = min(best, (d, fp.GetReference() + "." + p.GetNumber()))
-    need = 3.0 if "M2.5" in h.GetFPIDAsString() else 2.4   # M2.5 head r2.5 / M2 head r1.9, + 0.5 mm
+    need = 3.0 if "M2.5" in h.GetFPIDAsString() else 2.4   # socket heads: M2.5 r2.25 (+0.75), M2 r1.9 (+0.5)
     check(best[0] >= need, f"{h.GetReference()} ({h.GetFPIDAsString().split(':')[-1]}) at ({c[0]:.1f}, {c[1]:.1f}): nearest non-GND copper {best[0]:.2f} mm ({best[1]}), screw head needs {need}")
 
 
@@ -265,9 +265,9 @@ ox0, oy0, ox1, oy1 = [mm(v) for v in (board.GetBoardEdgesBoundingBox().GetLeft()
                                       board.GetBoardEdgesBoundingBox().GetRight(), board.GetBoardEdgesBoundingBox().GetBottom())]
 for h in [f for f in board.GetFootprints() if f.GetReference().startswith("H")]:
     hx, hy = mm(h.GetPosition().x), mm(h.GetPosition().y)
-    head = 2.5 if "M2.5" in h.GetFPIDAsString() else 1.9          # pan heads: M2.5 dk 5.0 mm, M2 dk 3.8 mm
+    head = 2.25 if "M2.5" in h.GetFPIDAsString() else 1.9         # socket-head cap screws (ISO 4762): M2.5 dk 4.5, M2 dk 3.8
     margin = min(hx - ox0, ox1 - hx, hy - oy0, oy1 - hy) - head
-    check(margin >= 0.4, f"{h.GetReference()} pan-head screw (r {head} mm) stays {margin:.2f} mm inside the board edge")
+    check(margin >= 0.5, f"{h.GetReference()} socket-head screw (r {head} mm) stays {margin:.2f} mm inside the board edge")
 
 print("\n".join(notes))
 print("\n".join(fails) if fails else "\nNO FAILURES")

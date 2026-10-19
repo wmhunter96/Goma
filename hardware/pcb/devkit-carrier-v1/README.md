@@ -64,8 +64,8 @@ Upload `sesame-devkit-carrier-gerbers.zip`. Settings: 2 layers, 69 × 42 mm, 1.6
 | R1 | 100 kΩ ¼ W (1% preferred) | 1 | Battery divider top |
 | R2 | 22 kΩ ¼ W (1% preferred) | 1 | Battery divider bottom |
 | C2 | 100 nF ceramic, 5 mm pitch | 1 | Sense filter |
-| H1–H5 | M2.5 mounting holes | 5 | Corners, top-middle, and two under the DevKit (fit those before plugging the DevKit in). 3 mm copper keep-out: only ground fill under a screw head |
-| HP1, HP2 | M2 holes under the Pololu's own mounting holes | 2 | One M2 screw through the module, a 3D-printed standoff (≈2.5 mm tall, ≤ 4 mm OD at HP1) and the carrier. 2.4 mm copper keep-out |
+| H1–H5 | M2.5 mounting holes (socket-head cap screws, 4.5 mm head) | 5 | Corners, top-middle, and two under the DevKit (fit those before plugging the DevKit in). 3 mm copper keep-out: only ground fill under a screw head |
+| HP1, HP2 | M2 holes under the Pololu's own mounting holes (M2 socket head, 3.8 mm) | 2 | One M2 screw through the module, a 3D-printed standoff (≈2.5 mm tall, ≤ 4 mm OD at HP1) and the carrier. 2.4 mm copper keep-out |
 
 Solder R1, R2 and C2 **before** the DevKit sockets; they sit underneath the DevKit and must stay under ~7 mm tall.
 
