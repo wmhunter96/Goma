@@ -135,7 +135,7 @@ place("SW1", "Connector_Wire", "SolderWire-1sqmm_1x02_P5.4mm_D1.4mm_OD2.7mm", SW
       "Switch", {1: "VBAT", 2: "VBAT_SW"}, show_ref=False)
 
 # Battery sense divider under the DevKit: 100k / 22k -> GPIO34 (12.6 V -> 2.27 V, inside the ADC's accurate range), 100nF filter
-XR1 = kx(7) + 1.27                # in line with a gap between socket pins, so the sense trace can pass through
+XR1 = kx(12) + 1.27               # in line with a gap between socket pins, so the sense trace can pass through
 R1T, R1B = (XR1, 21.0), (XR1, 21.0 + 10.16)
 R2T = (XR1 + 3.0, 21.0)
 C2T = (XR1 + 6.0, 21.0)
@@ -147,7 +147,7 @@ place("C2", "Capacitor_THT", "C_Disc_D5.0mm_W2.5mm_P5.00mm", C2T, (0, 1),
       "100nF", {1: "BAT_SENSE", 2: "GND"}, ref_off=(C2T[0] + 2.0, 23.5))
 
 # Mounting holes (M2.5), none near the antenna end
-for i, (x, y) in enumerate([(40.5, 2.2), (66.6, 12.0), (66.6, 40.0), (31.0, 24.0)]):
+for i, (x, y) in enumerate([(40.5, 2.2), (66.6, 12.0), (66.6, 40.0), (31.0, 16.5)]):
     fp = load("MountingHole", "MountingHole_2.7mm_M2.5")
     board.Add(fp)
     fp.SetReference("H%d" % (i + 1))
@@ -245,11 +245,11 @@ def text(s, x, y, size=1.0, layer=SILK, angle=0, just=None):
 # DevKit outline (its antenna end hangs off the left edge) and orientation notes
 for a, b in [((0.15, DEV_Y0), (DEV_X1, DEV_Y0)), ((DEV_X1, DEV_Y0), (DEV_X1, DEV_Y1)), ((DEV_X1, DEV_Y1), (0.15, DEV_Y1))]:
     line(a, b, SILK, 0.15)
-text("ESP32 DevKit (30-pin)", 22.0, 16.5, 1.2)
+text("ESP32 DevKit (30-pin)", 15.0, 16.5, 1.2)
 text("<- ANTENNA overhangs", 9.0, 19.0, 0.9, just="left")
-text("USB ->", 37.5, 26.0, 1.0)
+text("USB ->", 39.0, 16.5, 1.0)
 text("SESAME CARRIER v1", 2.0, 31.5, 0.9, just="left")
-text("BAT->IO34 x5.55", 33.0, 31.5, 0.8)
+text("BAT->IO34 x5.55", 37.0, 34.6, 0.8)
 # Servo labels above each column, S/+/- legend to the right of the block
 for name, sig, k in SERVOS:
     text(name, kx(k), 1.0, 0.8)
@@ -277,6 +277,62 @@ text("BATT 3S", BATP[0], 23.7, 0.9)
 text("BAT+", BATP[0], BATP[1] + 3.0, 0.9)
 text("BAT-", BATN[0], BATN[1] + 2.9, 0.9)
 
+# ---------------------------------------------------------------- face art
+# Sesame's own "cute" face, read straight from the firmware's OLED bitmaps and drawn pixel-for-pixel.
+import re
+FACES_H = os.path.join(HERE, "..", "..", "..", "firmware", "face-bitmaps.h")
+
+def face_pixels(name):
+    src = open(FACES_H, encoding="utf8").read()
+    m = re.search(r"const unsigned char epd_bitmap_%s\s*\[\]\s*PROGMEM\s*=\s*\{([^}]*)\}" % name, src)
+    data = [int(v, 16) for v in re.findall(r"0x[0-9a-fA-F]+", m.group(1))]
+    px = [[bool(data[y * 16 + x // 8] & (0x80 >> (x % 8))) for x in range(128)] for y in range(64)]
+    ys = [y for y in range(64) if any(px[y])]
+    xs = [x for x in range(128) if any(px[y][x] for y in range(64))]
+    return [row[min(xs):max(xs) + 1] for row in px[min(ys):max(ys) + 1]]
+
+def halve(px):   # 2x2 max-pool: keeps thin strokes when shrinking
+    h, w = (len(px) + 1) // 2, (len(px[0]) + 1) // 2
+    get = lambda y, x: y < len(px) and x < len(px[0]) and px[y][x]
+    return [[get(2*y, 2*x) or get(2*y+1, 2*x) or get(2*y, 2*x+1) or get(2*y+1, 2*x+1) for x in range(w)] for y in range(h)]
+
+def pixel_art(px, x0, y0, size, layer, mirror=False):
+    w = len(px[0])
+    for y, row in enumerate(px):
+        x = 0
+        while x < w:
+            if row[x]:
+                e = x
+                while e < w and row[e]:
+                    e += 1
+                a, b = (w - e, w - x) if mirror else (x, e)
+                r = pcbnew.PCB_SHAPE(board)
+                r.SetShape(pcbnew.SHAPE_T_RECT)
+                r.SetStart(P(x0 + a * size, y0 + y * size))
+                r.SetEnd(P(x0 + b * size, y0 + (y + 1) * size))
+                r.SetFilled(True)
+                r.SetWidth(0)
+                r.SetLayer(layer)
+                board.Add(r)
+                x = e
+            else:
+                x += 1
+
+CUTE = face_pixels("cute")
+# Back: big, mirrored so it reads correctly from underneath, in the open area under the DevKit
+pixel_art(CUTE, 1.5, 15.5, 0.235, pcbnew.B_SilkS, mirror=True)
+for s_, y_, sz in [("SESAME", 26.0, 2.2), ("DevKit carrier v1", 29.6, 1.2)]:
+    t = pcbnew.PCB_TEXT(board)
+    t.SetText(s_)
+    t.SetPosition(P(15.0, y_))
+    t.SetLayer(pcbnew.B_SilkS)
+    t.SetTextSize(VECTOR2I(FromMM(sz), FromMM(sz)))
+    t.SetTextThickness(FromMM(sz * 0.15))
+    t.SetMirrored(True)
+    board.Add(t)
+# Front: half resolution so every stroke stays above the 0.15 mm silkscreen minimum
+pixel_art(halve(CUTE), 37.0, 6.0, 0.164, SILK)
+
 # ---------------------------------------------------------------- zones
 def zone(layer):
     z = pcbnew.ZONE(board)
@@ -296,8 +352,7 @@ zone(F)
 zone(B)
 
 # GND stitching vias in open areas
-for xy in [(14.0, 16.0), (8.0, 25.0), (26.0, 16.0), (36.0, 18.0), (36.0, 30.0), (40.0, 9.0), (42.5, 33.0),
-           (54.0, 31.0), (48.0, 36.0), (66.6, 30.0), (60.0, 18.0)]:
+for xy in [(28.5, 33.0), (43.0, 28.0), (42.5, 33.0), (54.0, 31.0), (48.0, 36.0), (66.6, 30.0), (60.0, 18.0)]:
     via(xy, "GND")
 
 # ---------------------------------------------------------------- design rules + fill

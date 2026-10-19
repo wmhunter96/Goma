@@ -10,6 +10,7 @@ Replaces hand wiring: 3S battery in (solder pads for a pigtail), onboard 5V/5A r
 - `sesame-devkit-carrier.step` is the 3D model for designing the body around the board.
 
 ![top](preview/top_3d.png)
+![bottom](preview/bottom_3d.png)
 
 ## Layout
 
@@ -89,3 +90,4 @@ float batteryVolts() {
 - Antenna: overhangs the board edge entirely, to keep Wi-Fi range.
 - The DevKit's own micro-USB is used for flashing (with the DevKit out of the carrier); there's deliberately no second USB-serial chip on the carrier.
 - There's no schematic file; `build_board.py` is the source of truth for every connection.
+- Board art: Sesame's own `cute` face `( 〃>ᴗ<〃 )`, read pixel-for-pixel from `firmware/face-bitmaps.h` at build time. Big on the back, half-resolution on the front (kept above the 0.15 mm silkscreen minimum).
