@@ -89,6 +89,27 @@ Servo headers are **S + −** from the DevKit outward: orange toward the DevKit,
 3. With nothing plugged in, use continuity mode: 5V to GND, and battery + to GND, must **not** beep.
 4. First power-up with the DevKit only, no servos. Measure 5V at the servo + pins before plugging servos in.
 
+## If something beeps (finding a short)
+
+On this board a short is almost certainly a solder bridge or a backwards part. It is a 2-layer board, so there are no buried layers to fail. PCBWay electrically tests bare boards, and copper-to-copper spacing is at least 0.4 mm everywhere.
+
+Work with everything unplugged: no battery, no DevKit, no servos.
+
+| Beeps between | Where to look, most likely first |
+|---|---|
+| 5V and GND | Servo headers: the **+** and **−** pins are neighbours (8 headers, 16 joints). J5: **G** and **5V** are neighbours. U1: pin 4 (GND) beside pin 5 (OUT). C1 in backwards. |
+| Battery + and GND | U1: pin 2 (VIN) beside pin 3 (GND). C3 in backwards. SW1 or J6 wire strands touching the next pad. |
+| 3V3 and GND | J3: **V** and **G** are neighbours. DevKit socket J2: 3V3 is next to GND at the USB end. |
+| Two signals, or a signal and 5V/GND | DevKit sockets J1/J2 (15 pins each) and J4. Check every adjacent pair. |
+
+How to find it:
+
+1. **Look first.** Put a phone flashlight behind the board and look along each row of pins with a magnifier or phone macro. Bridges show up as a shiny blob joining two pads.
+2. **Halve the search.** If continuity mode can't tell you where, cut the board in half electrically. Unplug anything that unplugs, then check whether the short is on the servo side, the OLED/I-O side or the regulator side. A loose servo-header joint only takes a few seconds to reflow.
+3. **Fix a bridge.** Add flux, then drag a clean, tinned iron tip between the two pins. If that doesn't clear it, use solder wick.
+4. **Backwards electrolytic** (C1, C3): the stripe on the can marks **−**. The square pad, marked **+** on the silkscreen, takes the long leg. Replace it if it was ever powered backwards.
+5. **Still shorted with nothing obvious?** Use the multimeter's resistance mode. The reading drops as you move the probe toward the short, so follow the lowest reading.
+
 ## Battery reading in firmware
 
 `V_battery = V_GPIO34 × (100k + 22k) / 22k = V_GPIO34 × 5.545` (12.6 V full charge reads as 2.27 V, inside the ESP32 ADC's accurate 0.15–2.45 V range)
@@ -116,5 +137,5 @@ KiCad DRC is clean (0 violations). Headers that deliberately sit side by side on
 
 - Antenna: overhangs the board edge entirely, to keep Wi-Fi range.
 - The DevKit's own micro-USB is used for flashing (with the DevKit out of the carrier); there's deliberately no second USB-serial chip on the carrier.
-- There's no schematic file; `build_board.py` is the source of truth for every connection.
+- `build_board.py` is the source of truth for every connection; the schematic is generated from the board by `gen_schematic.py`.
 - Board art: Sesame's own `cute` face `( 〃>ᴗ<〃 )`, read pixel-for-pixel from `firmware/face-bitmaps.h` at build time. Big on the back, half-resolution on the front (kept above the 0.15 mm silkscreen minimum).
