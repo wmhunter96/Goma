@@ -1,0 +1,70 @@
+269 copper shapes, 587 different-net pairs closer than 1.6 mm
+solder mask: 0 mm expansion (opening = pad), vias tented both sides -> only pads are exposed copper
+
+== 1. tightest copper-to-copper clearance by type ==
+  pad / track    0.220 mm  B.Cu  J1.1 (unconnected-(J1-EN-Pad1))  <->  track 0.4 (SCL)
+  track / zone   0.500 mm  F.Cu  track 1.5 (VBAT)  <->  GND fill (GND)
+  pad / zone     0.500 mm  F.Cu  J1.1 (unconnected-(J1-EN-Pad1))  <->  GND fill (GND)
+  track / track  0.770 mm  F.Cu  track 0.5 (+3V3)  <->  track 0.5 (BAT_SENSE)
+  pad / pad      0.840 mm  F.Cu  S8.1 (D15)  <->  S7.1 (D2)
+  track / via    1.050 mm  B.Cu  track 1.5 (+5V)  <->  via (GND)
+
+== 2. solder-bridge candidates: exposed pad <-> exposed pad ==
+  pad pairs by what a bridge would do: CRITICAL 2, HIGH 29, MEDIUM 2, LOW 29, NONE 16
+  CRITICAL gap 0.84 mm  U1.2   (VBAT_SW) <-> U1.3   (GND)  battery dead short
+  CRITICAL gap 1.30 mm  C3.1   (VBAT_SW) <-> C3.2   (GND)  battery dead short
+  HIGH     gap 0.84 mm  J1.14  (GND) <-> J1.15  (+5V)  5V rail shorted to GND
+  HIGH     gap 0.84 mm  J5.2   (GND) <-> J5.3   (+5V)  5V rail shorted to GND
+  HIGH     gap 0.84 mm  S3.1   (D18) <-> S3.2   (+5V)  5V into an ESP32 3.3V pin
+  HIGH     gap 0.84 mm  S3.2   (+5V) <-> S3.3   (GND)  5V rail shorted to GND
+  HIGH     gap 0.84 mm  S8.1   (D15) <-> S8.2   (+5V)  5V into an ESP32 3.3V pin
+  HIGH     gap 0.84 mm  S8.2   (+5V) <-> S8.3   (GND)  5V rail shorted to GND
+  HIGH     gap 0.84 mm  S6.1   (D4) <-> S6.2   (+5V)  5V into an ESP32 3.3V pin
+  HIGH     gap 0.84 mm  S6.2   (+5V) <-> S6.3   (GND)  5V rail shorted to GND
+  HIGH     gap 0.84 mm  S1.1   (D23) <-> S1.2   (+5V)  5V into an ESP32 3.3V pin
+  HIGH     gap 0.84 mm  S1.2   (+5V) <-> S1.3   (GND)  5V rail shorted to GND
+  HIGH     gap 0.84 mm  S7.1   (D2) <-> S7.2   (+5V)  5V into an ESP32 3.3V pin
+  HIGH     gap 0.84 mm  S7.2   (+5V) <-> S7.3   (GND)  5V rail shorted to GND
+  HIGH     gap 0.84 mm  S5.1   (D16) <-> S5.2   (+5V)  5V into an ESP32 3.3V pin
+  HIGH     gap 0.84 mm  S5.2   (+5V) <-> S5.3   (GND)  5V rail shorted to GND
+  HIGH     gap 0.84 mm  S4.1   (D17) <-> S4.2   (+5V)  5V into an ESP32 3.3V pin
+  HIGH     gap 0.84 mm  S4.2   (+5V) <-> S4.3   (GND)  5V rail shorted to GND
+  HIGH     gap 0.84 mm  S2.1   (D19) <-> S2.2   (+5V)  5V into an ESP32 3.3V pin
+  HIGH     gap 0.84 mm  S2.2   (+5V) <-> S2.3   (GND)  5V rail shorted to GND
+  HIGH     gap 0.84 mm  U1.4   (GND) <-> U1.5   (+5V)  5V rail shorted to GND
+  HIGH     gap 1.54 mm  S8.1   (D15) <-> S7.2   (+5V)  5V into an ESP32 3.3V pin
+  HIGH     gap 1.54 mm  S8.2   (+5V) <-> S7.1   (D2)  5V into an ESP32 3.3V pin
+  HIGH     gap 1.54 mm  S3.1   (D18) <-> S2.2   (+5V)  5V into an ESP32 3.3V pin
+  HIGH     gap 1.54 mm  S6.1   (D4) <-> S5.2   (+5V)  5V into an ESP32 3.3V pin
+  HIGH     gap 1.54 mm  S5.1   (D16) <-> S4.2   (+5V)  5V into an ESP32 3.3V pin
+  HIGH     gap 1.54 mm  S3.2   (+5V) <-> S2.1   (D19)  5V into an ESP32 3.3V pin
+  HIGH     gap 1.54 mm  S6.2   (+5V) <-> S5.1   (D16)  5V into an ESP32 3.3V pin
+  HIGH     gap 1.54 mm  S5.2   (+5V) <-> S4.1   (D17)  5V into an ESP32 3.3V pin
+  HIGH     gap 1.54 mm  S6.2   (+5V) <-> S7.1   (D2)  5V into an ESP32 3.3V pin
+  HIGH     gap 1.54 mm  S6.1   (D4) <-> S7.2   (+5V)  5V into an ESP32 3.3V pin
+  MEDIUM   gap 0.84 mm  J2.14  (GND) <-> J2.15  (+3V3)  DevKit 3.3V shorted to GND
+  MEDIUM   gap 0.84 mm  J3.3   (+3V3) <-> J3.4   (GND)  DevKit 3.3V shorted to GND
+  narrowest gap between any two pads: 0.84 mm (= solder-mask dam width)
+
+== 3. closest masked copper (tracks / fill) to an exposed pad, HIGH/CRITICAL only ==
+  0.440 mm B.Cu  pad U1.2 (VBAT_SW) <-> track 1.7 (+5V)  12.6 V into 5V/3.3V parts
+  0.440 mm B.Cu  pad U1.3 (GND) <-> track 1.7 (+5V)  5V rail shorted to GND
+  0.440 mm B.Cu  pad U1.4 (GND) <-> track 1.7 (+5V)  5V rail shorted to GND
+  0.500 mm F.Cu  pad C1.1 (+5V) <-> GND fill (GND)  5V rail shorted to GND
+  0.500 mm B.Cu  pad SW1.1 (VBAT) <-> GND fill (GND)  battery dead short
+  0.500 mm F.Cu  pad J6.1 (VBAT) <-> GND fill (GND)  battery dead short
+  0.500 mm F.Cu  pad C3.1 (VBAT_SW) <-> GND fill (GND)  battery dead short
+  0.500 mm F.Cu  pad SW1.2 (VBAT_SW) <-> GND fill (GND)  battery dead short
+  0.500 mm F.Cu  pad U1.5 (+5V) <-> GND fill (GND)  5V rail shorted to GND
+  0.500 mm F.Cu  pad J1.15 (+5V) <-> GND fill (GND)  5V rail shorted to GND
+
+== 4. what sits under each screw head (socket head M2.5 r2.25 / M2 r1.9, +0.2 mm) ==
+  HP1  (49.20,19.10): B.Cu:GND, F.Cu:GND
+  H4   (31.00,16.50): B.Cu:GND, F.Cu:GND
+  H1   (8.85,2.95): B.Cu:GND, F.Cu:GND
+  H2   (3.80,30.00): B.Cu:GND, F.Cu:GND
+  HP2  (62.70,3.10): B.Cu:GND, F.Cu:GND
+  H3   (40.50,2.95): B.Cu:GND, F.Cu:GND
+  H5   (66.05,39.05): B.Cu:GND, F.Cu:GND
+
+SHORT CHECK PASSED

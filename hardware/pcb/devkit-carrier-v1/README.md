@@ -18,6 +18,7 @@ python build_board.py && python gen_schematic.py          (KiCad 10's bundled py
 kicad-cli sch erc --severity-all sesame-devkit-carrier.kicad_sch
 kicad-cli pcb drc --schematic-parity --severity-all --refill-zones sesame-devkit-carrier.kicad_pcb
 python audit.py
+python short_check.py        (plain python, no KiCad: short-risk margins)
 ```
 - `sesame-devkit-carrier.step` is the 3D model for designing the body around the board.
 
@@ -60,7 +61,7 @@ Upload `sesame-devkit-carrier-gerbers.zip`. Settings: 2 layers, 69 × 42 mm, 1.6
 | J3 | 1×4 male header | 1 | OLED: C D V G = SCL, SDA, 3V3, GND |
 | J4, J5 | 1×6 + 1×3 male header | 1 each | Spare I/O (optional) |
 | C1 | 470 µF 16 V electrolytic, 8 mm dia, 3.5 mm pitch, ≤ 12 mm tall (e.g. Panasonic EEU-FR1C471) | 1 | 5V bulk cap. Mind polarity (+ marked) |
-| C3 | 47 µF 35 V electrolytic, 5 mm dia, 2.0 mm pitch, ≤ 11 mm tall | 1 | Regulator input: damps the voltage spike when the battery/switch connects. Must be 35 V or higher. Mind polarity (+ marked). Pads are narrowed for a 0.8 mm gap (it sits across the battery); leads up to 0.6 mm fit the 0.7 mm holes |
+| C3 | 47 µF 35 V electrolytic, 5 mm dia, 2.0 or 2.5 mm pitch, ≤ 11 mm tall | 1 | Regulator input: damps the voltage spike when the battery/switch connects. Must be 35 V or higher. Mind polarity (+ marked). Footprint is 2.5 mm pitch with narrowed pads for a 1.3 mm gap (it sits across the battery); a 2.0 mm-pitch cap's leads bend out slightly to fit |
 | R1 | 100 kΩ ¼ W (1% preferred) | 1 | Battery divider top |
 | R2 | 22 kΩ ¼ W (1% preferred) | 1 | Battery divider bottom |
 | C2 | 100 nF ceramic, 5 mm pitch | 1 | Sense filter |
@@ -91,7 +92,7 @@ Servo headers are **S + −** from the DevKit outward: orange toward the DevKit,
 
 ## If something beeps (finding a short)
 
-On this board a short is almost certainly a solder bridge or a backwards part. It is a 2-layer board, so there are no buried layers to fail. PCBWay electrically tests bare boards, and copper-to-copper spacing is at least 0.4 mm everywhere.
+On this board a short is almost certainly a solder bridge or a backwards part. It is a 2-layer board, so there are no buried layers to fail, and PCBWay electrically tests bare boards. Bare pads are at least 0.84 mm apart, ground fill stays 0.5 mm back from everything, and `short_check.py` enforces those margins.
 
 Work with everything unplugged: no battery, no DevKit, no servos.
 

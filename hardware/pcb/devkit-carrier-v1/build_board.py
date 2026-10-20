@@ -54,9 +54,9 @@ def load(lib, name, group_silk=False):
                     g.SetLayer(pcbnew.F_Fab)
                 elif g.GetWidth() < FromMM(0.15) and not g.IsSolidFill():
                     g.SetWidth(FromMM(0.15))
-        if name == "CP_Radial_D5.0mm_P2.00mm":
-            # C3 sits across the battery: stock 1.6 mm round pads on 2.0 mm pitch leave a 0.4 mm gap.
-            # Pads 1.2 mm along the pitch (1.6 mm across, as stock), 0.7 mm drill for the 0.5 mm leads: 0.8 mm gap.
+        if name == "CP_Radial_D5.0mm_P2.50mm":
+            # C3 sits across the battery: stock 1.6 mm round pads on 2.5 mm pitch leave a 0.9 mm gap.
+            # Pads 1.2 mm along the pitch (1.6 mm across, as stock), 0.7 mm drill for the 0.5 mm leads: 1.3 mm gap.
             for p in fp.Pads():
                 if p.GetShape() != pcbnew.PAD_SHAPE_ROUNDRECT:
                     p.SetShape(pcbnew.PAD_SHAPE_OVAL)
@@ -173,9 +173,10 @@ place("J6", "Connector_Wire", "SolderWire-1.5sqmm_1x02_P7.8mm_D1.7mm_OD3.9mm", B
       "Battery pigtail", {1: "VBAT", 2: "GND"}, show_ref=False)
 
 # Regulator input capacitor: damps the LC spike when the battery or switch connects (Pololu app note 0J16).
-# 5 mm wide so it clears the DevKit's USB end even if that end sits 5 mm past pin 15.
+# 5 mm wide so it clears the DevKit's USB end even if that end sits 5 mm past pin 15. 2.5 mm lead pitch for a wide
+# gap across the battery (a 2.0 mm-pitch cap's leads bend out to fit).
 C3P = (46.4, 33.8)
-place("C3", "Capacitor_THT", "CP_Radial_D5.0mm_P2.00mm", C3P, (0, 1),
+place("C3", "Capacitor_THT", "CP_Radial_D5.0mm_P2.50mm", C3P, (0, 1),
       "47uF 35V", {1: "VBAT_SW", 2: "GND"}, ref_off=(46.4, 39.4))
 
 # Power switch wire pads (bridge with a wire if no switch)
@@ -186,8 +187,8 @@ place("SW1", "Connector_Wire", "SolderWire-1sqmm_1x02_P5.4mm_D1.4mm_OD2.7mm", SW
 # Battery sense divider under the DevKit: 100k / 22k -> GPIO34 (12.6 V -> 2.27 V, inside the ADC's accurate range), 100nF filter
 XR1 = kx(12) + 1.27               # under the DevKit, between socket rows
 R1T, R1B = (XR1, 21.0), (XR1, 21.0 + 10.16)
-R2T = (XR1 + 3.0, 21.0)
-C2T = (XR1 + 6.0, 21.0)
+R2T = (XR1 + 3.81, 21.0)          # 2.2 mm between R1's battery pad and R2's ground pad
+C2T = (XR1 + 6.81, 21.0)
 place("R1", "Resistor_THT", "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", R1B, (0, -1),
       "100k", {1: "VBAT_SW", 2: "BAT_SENSE"}, ref_off=(XR1 - 2.4, 26.1))
 place("R2", "Resistor_THT", "R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal", R2T, (0, 1),
@@ -417,7 +418,7 @@ def zone(layer):
     o.NewOutline()
     for x, y in [(0.3, 0.3), (W - 0.3, 0.3), (W - 0.3, H - 0.3), (0.3, H - 0.3)]:
         o.Append(FromMM(x), FromMM(y))
-    z.SetLocalClearance(FromMM(0.3))
+    z.SetLocalClearance(FromMM(0.5))  # ground fill 0.5 mm back from every pad and trace
     z.SetMinThickness(FromMM(0.25))
     z.SetThermalReliefGap(FromMM(0.4))
     z.SetThermalReliefSpokeWidth(FromMM(0.6))
@@ -444,7 +445,7 @@ for (hx, hy, kr) in HOLES + POLOLU_HOLES:
     board.Add(ka)
 
 # GND stitching vias in open areas
-for xy in [(28.5, 33.0), (42.3, 28.0), (42.5, 33.0), (54.0, 31.0), (66.6, 30.0), (60.0, 18.0)]:
+for xy in [(28.5, 33.0), (41.8, 27.2), (41.8, 33.0), (54.0, 31.0), (66.6, 30.0), (60.0, 18.0)]:
     via(xy, "GND")
 
 # ---------------------------------------------------------------- design rules + fill
