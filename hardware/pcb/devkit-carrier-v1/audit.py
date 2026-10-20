@@ -278,5 +278,33 @@ neck_len = sum(mm(t.GetLength()) for t in narrow)
 check(all(mm(t.GetWidth()) >= 0.4 - 1e-6 for t in sig) and neck_len < 25,
       f"signal traces 0.5 mm; {len(narrow)} necked segments at 0.4 mm, {neck_len:.1f} mm total, only between pin rows")
 
+
+# ---------------------------------------------------------------- 15. power traces keep >= 0.4 mm from other nets
+def _segd(pt, a, c):
+    dx, dy = c[0] - a[0], c[1] - a[1]
+    t = 0 if dx == dy == 0 else max(0, min(1, ((pt[0]-a[0])*dx + (pt[1]-a[1])*dy) / (dx*dx + dy*dy)))
+    return math.hypot(pt[0] - (a[0] + t*dx), pt[1] - (a[1] + t*dy))
+_tr = [t for t in board.GetTracks() if t.GetClass() == "PCB_TRACK"]
+worst_pw = (99, "")
+for t in _tr:
+    w = mm(t.GetWidth())
+    if w < 1.0:
+        continue
+    a = (mm(t.GetStart().x), mm(t.GetStart().y)); c = (mm(t.GetEnd().x), mm(t.GetEnd().y))
+    for fp in board.GetFootprints():
+        for p in fp.Pads():
+            if not p.GetNumber() or p.GetNetname() == t.GetNetname() or not p.IsOnLayer(t.GetLayer()):
+                continue
+            bb = p.GetBoundingBox()
+            d = _segd((mm(p.GetPosition().x), mm(p.GetPosition().y)), a, c) - w / 2 - max(mm(bb.GetWidth()), mm(bb.GetHeight())) / 2
+            worst_pw = min(worst_pw, (d, f"{t.GetNetname()} {w} mm by pad {fp.GetReference()}.{p.GetNumber()} ({p.GetNetname()})"))
+    for u in _tr:
+        if u.GetNetname() == t.GetNetname() or u.GetLayer() != t.GetLayer():
+            continue
+        b1 = (mm(u.GetStart().x), mm(u.GetStart().y)); b2 = (mm(u.GetEnd().x), mm(u.GetEnd().y))
+        d = min(_segd(a, b1, b2), _segd(c, b1, b2), _segd(b1, a, c), _segd(b2, a, c)) - w / 2 - mm(u.GetWidth()) / 2
+        worst_pw = min(worst_pw, (d, f"{t.GetNetname()} {w} mm by track {u.GetNetname()}"))
+check(worst_pw[0] >= 0.4, f"power traces >= 0.4 mm from other nets (closest {worst_pw[0]:.2f} mm: {worst_pw[1]})")
+
 print("\n".join(notes))
 print("\n".join(fails) if fails else "\nNO FAILURES")

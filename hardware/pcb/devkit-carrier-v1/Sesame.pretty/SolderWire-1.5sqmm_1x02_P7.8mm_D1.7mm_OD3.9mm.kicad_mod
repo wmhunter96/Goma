@@ -8,7 +8,7 @@
 	(property "Reference" "REF**"
 		(at 3.9 -3.15 0)
 		(layer "F.SilkS")
-		(uuid "093983b1-af4a-49fb-a2f5-01ecc8dad90c")
+		(uuid "17566a1c-42f4-4929-9c48-804d6b2520a0")
 		(effects
 			(font
 				(size 1 1)
@@ -19,7 +19,7 @@
 	(property "Value" "SolderWire-1.5sqmm_1x02_P7.8mm_D1.7mm_OD3.9mm"
 		(at 3.9 3.15 0)
 		(layer "F.Fab")
-		(uuid "8e2a78ea-56b2-42bb-acc4-4c24c094e4d7")
+		(uuid "39a4851a-2847-4d7f-a73b-bbdbd0fa7954")
 		(effects
 			(font
 				(size 1 1)
@@ -31,7 +31,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "a905c12e-d00f-4ad0-8671-4af9e682c556")
+		(uuid "afa4e372-b74b-4f4c-a61e-607bc662c588")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -42,7 +42,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "6f8bab9f-eac2-42a5-8ad2-1cd9c886267a")
+		(uuid "9e4ccf3c-905b-40df-8c00-7b1fa1518e2c")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -53,7 +53,7 @@
 		(at 0 0 0)
 		(layer "F.SilkS")
 		(hide yes)
-		(uuid "c0d45e17-4ced-462c-9178-c5e8ac9ce37d")
+		(uuid "3a43fb24-d5f8-4285-998a-373b93726b87")
 		(effects
 			(font
 				(size 1 1)
@@ -72,7 +72,7 @@
 		)
 		(fill no)
 		(layer "F.CrtYd")
-		(uuid "20b3ed28-b59d-4594-a5ff-ed09d10abf60")
+		(uuid "ec934433-1e25-460a-88dd-9f5f57267a71")
 	)
 	(fp_rect
 		(start 5.1 -2.45)
@@ -83,7 +83,7 @@
 		)
 		(fill no)
 		(layer "F.CrtYd")
-		(uuid "2a57fc4d-31ad-4bdf-af33-087561645b75")
+		(uuid "86a6130e-ba1a-41d9-be67-a236549b42c1")
 	)
 	(fp_circle
 		(center 0 0)
@@ -94,7 +94,7 @@
 		)
 		(fill no)
 		(layer "F.Fab")
-		(uuid "7b2cf99c-4b66-4639-a71c-8bd37ef81616")
+		(uuid "4fd26e2a-db4c-407e-b2c6-a16206d9b675")
 	)
 	(fp_circle
 		(center 7.8 0)
@@ -105,12 +105,12 @@
 		)
 		(fill no)
 		(layer "F.Fab")
-		(uuid "61810144-911f-4399-ab5f-9a6aca503224")
+		(uuid "9d20337c-7c9c-4261-9565-a9bcd45f1fbb")
 	)
 	(fp_text user "${REFERENCE}"
 		(at 3.9 0 90)
 		(layer "F.Fab")
-		(uuid "d4a35571-a30f-43ca-bc54-2f84c2e150fa")
+		(uuid "b27b3e0a-e52b-43a7-a756-65ffbf441b14")
 		(effects
 			(font
 				(size 1 1)
@@ -125,7 +125,7 @@
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
 		(roundrect_rratio 0.064103)
-		(uuid "ed3b1925-5f2d-4f3b-a459-f8436db661fc")
+		(uuid "d842fb1a-2d47-4203-9cb6-381babffdce3")
 	)
 	(pad "2" thru_hole circle
 		(at 7.8 0)
@@ -133,7 +133,7 @@
 		(drill 2.15)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
-		(uuid "c635a406-8251-492b-8cd7-1d351817af6f")
+		(uuid "e3d37ff2-f11c-4420-82eb-2be17e3e8e93")
 	)
 	(embedded_fonts no)
 	(model "${KICAD10_3DMODEL_DIR}/Connector_Wire.3dshapes/SolderWire-1.5sqmm_1x02_P7.8mm_D1.7mm_OD3.9mm.step"

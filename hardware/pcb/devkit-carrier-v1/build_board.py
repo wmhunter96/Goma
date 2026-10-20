@@ -241,16 +241,19 @@ for name, sig, k in SERVOS:
 RAIL = [(kx(1), Y5), (4.3, Y5), (5.6, 7.0), (12.1, 7.0), (13.4, Y5), (kx(13), Y5)]
 track(RAIL, "+5V", 2.0)
 track(RAIL, "+5V", 2.0, B)
-# Regulator OUT -> servo rail and DevKit VIN on the bottom layer; bulk cap tees in
+# Regulator OUT -> servo rail and DevKit VIN on the bottom layer; bulk cap tees in. Power traces keep >= 0.4 mm from
+# other nets: 1.7 mm where the output squeezes between the module's pins and BAT+, and the servo feed runs in the
+# open strip above the DevKit's socket row rather than alongside its GND/3V3 pins.
 XF = 44.0
-track([(ux(5), UY), (ux(5), 22.3), (53.5, 22.3), (52.3, 23.5), (XF, 23.5), (XF, 9.5), (35.5, 9.5), (35.5, Y5), (kx(13), Y5)],
-      "+5V", 2.0, B)
+YFEED = 7.6
+track([(ux(5), UY), (ux(5), 22.17), (53.5, 22.17)], "+5V", 1.7, B)
+track([(53.5, 22.17), (52.3, 23.5), (XF, 23.5), (XF, YFEED), (35.5, YFEED), (35.5, Y5), (kx(13), Y5)], "+5V", 2.0, B)
 track([(XF, 23.5), (XF, YL), (kx(15), YL)], "+5V", 1.5, B)
 track([C1P, (C1P[0], 23.5)], "+5V", 1.2, B)
 track([(kx(15), YL), (kx(15), YBOT)], "+5V", 0.8)
 
 # Battery: pigtail + -> switch -> regulator VIN
-track([BATP, (60.0, BATP[1]), (60.0, 37.7), (58.9, SW1[1]), SW1], "VBAT", 1.5)
+track([BATP, (59.6, BATP[1]), (59.6, 37.7), (58.9, SW1[1]), SW1], "VBAT", 1.5)
 track([SW2, (56.5, 34.3), (56.5, 22.5), (ux(2), 22.5), (ux(2), UY)], "VBAT_SW", 1.5)
 track([C3P, (49.6, C3P[1]), (SW2[0], 35.95), SW2], "VBAT_SW", 1.0)
 
