@@ -41,8 +41,9 @@ is either expected for this design, a tool heuristic that doesn't apply, or a pr
 
 | Change | Detail |
 |---|---|
+| Short-risk pass | Plain-Python analysis of every different-net copper pair, ranked by what a short would do. Two fixes: C3's pads (battery + to GND) narrowed to 1.2 mm along the pitch, so the gap went 0.40 → 0.80 mm (it had been the tightest pad gap on the board; now the narrowest anywhere is 0.80 mm); the 12.6 V battery-sense tap no longer threads between socket pins (it passed 0.22 mm from D13) but runs from C3 through the open space between the DevKit's socket rows to R1. Re-ran ERC, DRC + parity, audit and every kicad-happy analyzer: no new findings. |
 | Power-trace spacing | Wide 5V/battery traces moved off neighbouring pins: 5V servo feed 0.33 → 2.2 mm from the DevKit's GND/3V3 socket pins, battery + 0.30 → 0.70 mm from BAT−, regulator output 0.25 → 0.53 mm from BAT+ (that 10 mm run is 1.7 mm wide to fit between the module pins and BAT+). `audit.py` now requires power traces ≥ 0.4 mm from other nets (closest: 0.42 mm, masked trace under the regulator's own pins). |
-| Signal traces widened | All signal traces 0.3 → 0.5 mm for margin against etch variation and rework; 4 short segments (17.3 mm total) neck to 0.4 mm where they thread between 2.54 mm socket pins (0.22 mm clearance each side). Narrowest trace on the board went 0.3 → 0.4 mm. Re-ran ERC, DRC + parity, audit and every kicad-happy analyzer: no new findings. |
+| Signal traces widened | All signal traces 0.3 → 0.5 mm for margin against etch variation and rework; 3 short segments (11.9 mm total, after the short-risk pass) neck to 0.4 mm where they thread between 2.54 mm socket pins (0.22 mm clearance each side). Narrowest trace on the board went 0.3 → 0.4 mm. Re-ran ERC, DRC + parity, audit and every kicad-happy analyzer: no new findings. |
 
 ## Reviewed, no change needed
 

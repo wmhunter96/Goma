@@ -54,6 +54,14 @@ def load(lib, name, group_silk=False):
                     g.SetLayer(pcbnew.F_Fab)
                 elif g.GetWidth() < FromMM(0.15) and not g.IsSolidFill():
                     g.SetWidth(FromMM(0.15))
+        if name == "CP_Radial_D5.0mm_P2.00mm":
+            # C3 sits across the battery: stock 1.6 mm round pads on 2.0 mm pitch leave a 0.4 mm gap.
+            # Pads 1.2 mm along the pitch (1.6 mm across, as stock), 0.7 mm drill for the 0.5 mm leads: 0.8 mm gap.
+            for p in fp.Pads():
+                if p.GetShape() != pcbnew.PAD_SHAPE_ROUNDRECT:
+                    p.SetShape(pcbnew.PAD_SHAPE_OVAL)
+                p.SetSize(pcbnew.VECTOR2I(FromMM(1.2), FromMM(1.6)))
+                p.SetDrillSize(pcbnew.VECTOR2I(FromMM(0.7), FromMM(0.7)))
         fp.SetFPID(pcbnew.LIB_ID("Sesame", new))
         _io.FootprintSave(SESAME_LIB, fp)
         _saved.add(new)
@@ -176,7 +184,7 @@ place("SW1", "Connector_Wire", "SolderWire-1sqmm_1x02_P5.4mm_D1.4mm_OD2.7mm", SW
       "Switch", {1: "VBAT", 2: "VBAT_SW"}, show_ref=False)
 
 # Battery sense divider under the DevKit: 100k / 22k -> GPIO34 (12.6 V -> 2.27 V, inside the ADC's accurate range), 100nF filter
-XR1 = kx(12) + 1.27               # in line with a gap between socket pins, so the sense trace can pass through
+XR1 = kx(12) + 1.27               # under the DevKit, between socket rows
 R1T, R1B = (XR1, 21.0), (XR1, 21.0 + 10.16)
 R2T = (XR1 + 3.0, 21.0)
 C2T = (XR1 + 6.0, 21.0)
@@ -257,11 +265,10 @@ track([BATP, (59.6, BATP[1]), (59.6, 37.7), (58.9, SW1[1]), SW1], "VBAT", 1.5)
 track([SW2, (56.5, 34.3), (56.5, 22.5), (ux(2), 22.5), (ux(2), UY)], "VBAT_SW", 1.5)
 track([C3P, (49.6, C3P[1]), (SW2[0], 35.95), SW2], "VBAT_SW", 1.0)
 
-# Battery sense: switched battery along the bottom edge (bottom layer), up between socket pins to R1;
-# divider node over to GPIO34 on top
-track([SW2, (SW2[0], 41.3), (XR1, 41.3)], "VBAT_SW", SIG_W, B)
-track([(XR1, 41.3), (XR1, NECK_Y)], "VBAT_SW", NECK_W, B)          # between J5 pin 1 and the socket row
-track([(XR1, NECK_Y), R1B], "VBAT_SW", SIG_W, B)
+# Battery sense: switched battery from C3 (top layer) in from the right through the open space between the
+# DevKit's two socket rows to R1, so the 12.6 V tap never passes between pins; divider node over to GPIO34 on top
+YSENSE = 29.0                     # between R2's pads (21 / 31.16) and below C2
+track([C3P, (C3P[0] - (C3P[1] - YSENSE), YSENSE), (XR1, YSENSE), R1B], "VBAT_SW", SIG_W)
 track([R1T, (16.0, R1T[1]), (16.0, 34.5), (kx(4), 34.5), (kx(4), YL)], "BAT_SENSE", SIG_W)
 track([R1T, R2T, C2T], "BAT_SENSE", SIG_W)
 
