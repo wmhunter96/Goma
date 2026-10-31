@@ -112,6 +112,26 @@ const int servoPins[8] = {15, 2, 23, 19, 4, 16, 17, 18};
 // Subtrim values for each servo (offset in degrees)
 int8_t servoSubtrim[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
+// Battery sense (DevKit carrier v1: 100k/22k divider from BAT+ to GPIO34).
+// Set BATTERY_SENSE_PIN to -1 on builds without the divider.
+#define BATTERY_SENSE_PIN 34
+const float BATTERY_DIVIDER_RATIO = 5.545f;   // (100k + 22k) / 22k — tune against a multimeter
+const float BATTERY_EMPTY_V = 9.9f;           // 3S: 3.3 V/cell
+const float BATTERY_FULL_V = 12.6f;           // 3S: 4.2 V/cell
+const float BATTERY_LOW_V = 10.5f;            // warn on the OLED / web UI
+const float BATTERY_CUTOFF_V = 9.9f;          // detach servos (latched until reboot)
+const float BATTERY_PRESENT_MIN_V = 5.0f;     // below this: USB only / no pack connected
+const float BATTERY_PRESENT_MAX_V = 14.0f;    // above this: not a sane 3S reading (floating pin)
+const uint32_t BATTERY_SAMPLE_MS = 200;
+const uint32_t BATTERY_CUTOFF_HOLD_MS = 10000; // must stay below cutoff this long (ignores servo sag)
+
+float batteryVoltage = 0.0f;   // filtered pack voltage
+bool batteryPresent = false;
+bool batteryLow = false;
+bool batteryCutoff = false;
+unsigned long lastBatterySampleMs = 0;
+unsigned long batteryBelowCutoffSinceMs = 0;
+
 
 // Animation constants
 int frameDelay = 100;
@@ -222,6 +242,10 @@ void setApOnlyInfoText();
 void showWifiInfoNow();
 void updateWifiSetup();
 void finishWifiSetup(const String& err);
+void updateBattery();
+int batteryPercent();
+void drawBatteryOverlay();
+void batteryOverlayText(char* buf, size_t len);
 
 void handleRoot() {
   server.send(200, "text/html", index_html);
@@ -229,7 +253,10 @@ void handleRoot() {
 
 void handleCommandWeb() {
   // We send 200 OK immediately so the web browser doesn't hang waiting for animation to finish
-  if (server.hasArg("pose")) {
+  if (batteryCutoff && !server.hasArg("stop")) {
+    server.send(503, "text/plain", "Battery cutoff: recharge and reboot");
+  }
+  else if (server.hasArg("pose")) {
     currentCommand = server.arg("pose");
     recordInput();
     exitIdle();
@@ -291,7 +318,12 @@ void handleGetStatus() {
   json += "\"currentCommand\":\"" + currentCommand + "\",";
   json += "\"currentFace\":\"" + currentFaceName + "\",";
   json += "\"networkConnected\":" + String(networkConnected ? "true" : "false") + ",";
-  json += "\"apIP\":\"" + WiFi.softAPIP().toString() + "\"";
+  json += "\"apIP\":\"" + WiFi.softAPIP().toString() + "\",";
+  json += "\"battery\":{\"present\":" + String(batteryPresent ? "true" : "false");
+  json += ",\"voltage\":" + String(batteryVoltage, 2);
+  json += ",\"percent\":" + String(batteryPercent());
+  json += ",\"low\":" + String(batteryLow ? "true" : "false");
+  json += ",\"cutoff\":" + String(batteryCutoff ? "true" : "false") + "}";
   if (networkConnected) {
     json += ",\"networkIP\":\"" + networkIP.toString() + "\"";
   }
@@ -378,6 +410,8 @@ void handleApiCommand() {
     currentCommand = "";
     recordInput();
     server.send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Command stopped\"}");
+  } else if (batteryCutoff) {
+    server.send(503, "application/json", "{\"error\":\"Battery cutoff: recharge and reboot\"}");
   } else {
     currentCommand = command;
     recordInput();
@@ -742,7 +776,12 @@ void setup() {
     servos[i].attach(servoPins[i], 732, 2929);
   }
   delay(10);
-  
+
+#if BATTERY_SENSE_PIN >= 0
+  analogSetPinAttenuation(BATTERY_SENSE_PIN, ADC_11db);
+  updateBattery();
+#endif
+
   // Show rest face on startup without moving motors
   setFace("rest");
   
@@ -758,6 +797,7 @@ void loop() {
   updateAnimatedFace();
   updateIdleBlink();
   updateWifiInfoScroll();
+  updateBattery();
 
   if (currentCommand != "") {
     String cmd = currentCommand;
@@ -811,6 +851,19 @@ void loop() {
         else if(strcmp(command_buffer, "rn sg") == 0) { currentCommand = "shrug"; runShrugPose(); }
         else if(strcmp(command_buffer, "rn dd") == 0) { currentCommand = "dead"; runDeadPose(); }
         else if(strcmp(command_buffer, "rn cb") == 0) { currentCommand = "crab"; runCrabPose(); }
+        else if (strcmp(command_buffer, "bat") == 0) {
+#if BATTERY_SENSE_PIN >= 0
+          Serial.print("Pin mV: "); Serial.print(analogReadMilliVolts(BATTERY_SENSE_PIN));
+          Serial.print("  Pack: "); Serial.print(batteryVoltage, 2); Serial.print(" V  ");
+          Serial.print(batteryPercent()); Serial.print("%");
+          if (!batteryPresent) Serial.print("  (no battery detected)");
+          if (batteryLow) Serial.print("  LOW");
+          if (batteryCutoff) Serial.print("  CUTOFF");
+          Serial.println();
+#else
+          Serial.println("Battery sense disabled (BATTERY_SENSE_PIN -1)");
+#endif
+        }
         else if (strncmp(command_buffer, "face ", 5) == 0 || strncmp(command_buffer, "fc ", 3) == 0) {
           const char* faceName = (command_buffer[1] == 'c') ? command_buffer + 3 : command_buffer + 5;
           if (strlen(faceName) > 0) {
@@ -887,7 +940,89 @@ void loop() {
 void updateFaceBitmap(const unsigned char* bitmap) {
   display.clearDisplay();
   display.drawBitmap(0, 0, bitmap, 128, 64, SSD1306_WHITE);
+  drawBatteryOverlay();
   display.display();
+}
+
+// Overlay text for the current battery state ("" = nothing shown); flashes when low.
+void batteryOverlayText(char* buf, size_t len) {
+  buf[0] = '\0';
+  if (!batteryPresent) return;
+  if (batteryLow && (millis() / 500) % 2) return;
+  snprintf(buf, len, "%.1fV", batteryVoltage);
+}
+
+char batteryOverlayShown[8] = "";
+
+// Pack voltage in the bottom-right corner
+void drawBatteryOverlay() {
+  char buf[8];
+  batteryOverlayText(buf, sizeof(buf));
+  strcpy(batteryOverlayShown, buf);
+  if (buf[0] == '\0') return;
+  int w = strlen(buf) * 6;
+  display.fillRect(128 - w - 2, 64 - 9, w + 2, 9, SSD1306_BLACK);
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(128 - w, 64 - 8);
+  display.print(buf);
+}
+
+void updateBattery() {
+#if BATTERY_SENSE_PIN >= 0
+  unsigned long now = millis();
+
+  // Redraw only when the overlay would change (I2C frame pushes aren't free)
+  if (!showingWifiInfo && currentFaceFrames != nullptr && currentFaceFrameCount > 0) {
+    char buf[8];
+    batteryOverlayText(buf, sizeof(buf));
+    if (strcmp(buf, batteryOverlayShown) != 0) updateFaceBitmap(currentFaceFrames[currentFaceFrameIndex]);
+  }
+
+  if (lastBatterySampleMs != 0 && now - lastBatterySampleMs < BATTERY_SAMPLE_MS) return;
+  lastBatterySampleMs = now;
+
+  uint32_t mv = 0;
+  for (int i = 0; i < 8; i++) mv += analogReadMilliVolts(BATTERY_SENSE_PIN);
+  float v = (mv / 8.0f) / 1000.0f * BATTERY_DIVIDER_RATIO;
+
+  bool present = (v >= BATTERY_PRESENT_MIN_V && v <= BATTERY_PRESENT_MAX_V);
+  if (present && !batteryPresent) batteryVoltage = v;  // seed the filter on plug-in
+  else batteryVoltage += 0.1f * (v - batteryVoltage);   // ~2 s time constant
+  bool wasLow = batteryLow;
+  batteryPresent = present;
+
+  if (!batteryPresent) {
+    batteryLow = false;
+    batteryBelowCutoffSinceMs = 0;
+    return;
+  }
+
+  // Hysteresis so the warning doesn't chatter as the pack sags under load
+  if (batteryVoltage < BATTERY_LOW_V) batteryLow = true;
+  else if (batteryVoltage > BATTERY_LOW_V + 0.2f) batteryLow = false;
+  if (batteryLow != wasLow) Serial.println(batteryLow ? "Battery low" : "Battery OK");
+
+  if (!batteryCutoff && batteryVoltage < BATTERY_CUTOFF_V) {
+    if (batteryBelowCutoffSinceMs == 0) batteryBelowCutoffSinceMs = now;
+    if (now - batteryBelowCutoffSinceMs >= BATTERY_CUTOFF_HOLD_MS) {
+      batteryCutoff = true;
+      currentCommand = "";
+      for (int i = 0; i < 8; i++) servos[i].detach();
+      exitIdle();
+      setFace("sleepy");
+      Serial.println("Battery cutoff: servos detached. Recharge and reboot.");
+    }
+  } else {
+    batteryBelowCutoffSinceMs = 0;
+  }
+#endif
+}
+
+int batteryPercent() {
+  if (!batteryPresent) return -1;
+  float pct = (batteryVoltage - BATTERY_EMPTY_V) / (BATTERY_FULL_V - BATTERY_EMPTY_V) * 100.0f;
+  return (int)constrain(pct, 0.0f, 100.0f);
 }
 
 uint8_t countFrames(const unsigned char* const* frames, uint8_t maxFrames) {
@@ -996,6 +1131,7 @@ void delayWithFace(unsigned long ms) {
   unsigned long start = millis();
   while (millis() - start < ms) {
     updateAnimatedFace();
+    updateBattery();
     server.handleClient();
     dnsServer.processNextRequest();
     delay(5);
@@ -1049,7 +1185,7 @@ void updateIdleBlink() {
 
 // ====== HELPERS ======
 void setServoAngle(uint8_t channel, int angle) { 
-  if (channel < 8) {
+  if (channel < 8 && !batteryCutoff) {
     int adjustedAngle = constrain(angle + servoSubtrim[channel], 0, 180);
     servos[channel].write(adjustedAngle);
     delayWithFace(motorCurrentDelay);
@@ -1125,7 +1261,8 @@ void updateWifiInfoScroll() {
     display.setCursor(-wifiScrollPos, 1);
     display.print(wifiInfoText);
     display.setTextWrap(true);
-    
+
+    drawBatteryOverlay();
     display.display();
     
     // Advance scroll position

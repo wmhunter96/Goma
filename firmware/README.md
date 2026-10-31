@@ -168,6 +168,16 @@ The firmware is built on the Arduino-ESP32 framework. Currently the firmware is 
 - **Dynamic WiFi Info Overlay**: The `updateWifiInfoScroll()` function composites scrolling connection information over the face bitmap during the first 30 seconds of operation (before first input), drawing the face as background with a black bar and white text overlay for readability.
 - **Idle Animation System**: Implements realistic idle behavior with randomized blinking (including double-blinks) and boomerang face animations, triggered automatically when no input is detected.
 
+### Battery Monitoring
+
+The DevKit carrier board has a 100k/22k divider from BAT+ to GPIO34, so pack voltage = pin voltage × 5.545 (`BATTERY_DIVIDER_RATIO`). The firmware samples it every 200 ms with `analogReadMilliVolts()` (eFuse-calibrated) and smooths it over ~2 s.
+
+- **OLED**: pack voltage in the bottom-right corner; it flashes below 10.5 V (`BATTERY_LOW_V`).
+- **Web UI / API**: a battery line under the title, and a `battery` object in `/api/status`.
+- **Cutoff**: after 10 s continuously below 9.9 V (`BATTERY_CUTOFF_V`, 3.3 V/cell for 3S), the servos detach, the face switches to `sleepy`, and movement commands return 503. It stays latched until you recharge and reboot.
+- **No pack**: readings outside 5–14 V count as "no battery" (USB power, or a build without the divider). The overlay stays hidden and the cutoff can't trigger. Set `BATTERY_SENSE_PIN` to `-1` to turn the feature off.
+- **Calibration**: send `bat` on the serial monitor to print the raw pin mV and pack voltage. Compare against a multimeter at the battery pads and adjust `BATTERY_DIVIDER_RATIO` (multiply it by meter ÷ reported).
+
 ## Prerequisites & Development Environment
 
 - **Board Support**: ESP32 by Espressif Systems (v2.0.0+ recommended). Lolin S2 Mini and ESP32-WROOM32 DevKitC are best supported.
@@ -334,6 +344,7 @@ GET /api/status
   "currentFace": "walk",
   "networkConnected": true,
   "apIP": "192.168.4.1",
+  "battery": {"present": true, "voltage": 11.84, "percent": 72, "low": false, "cutoff": false},
   "networkIP": "192.168.1.100"
 }
 ```

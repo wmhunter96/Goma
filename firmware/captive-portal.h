@@ -56,6 +56,16 @@ const char index_html[] PROGMEM = R"rawliteral(
       color: #ff6b6b;
       font-weight: bold;
     }
+
+    /* Battery readout */
+    .battery-status {
+      font-size: 13px;
+      color: #aaa;
+      margin: -14px 0 6px 0;
+      display: none;
+    }
+    .battery-status.low { color: #ffb347; font-weight: bold; }
+    .battery-status.cutoff { color: #ff6b6b; font-weight: bold; }
     
     /* Section Containers */
     .sections-container {
@@ -363,6 +373,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 </head>
 <body>
   <h2>Sesame Controller</h2>
+  <div class="battery-status" id="batteryStatus"></div>
   <div class="command-queue" id="queueStatus">Command Queue: 0/3</div>
   
   <div class="sections-container">
@@ -1009,6 +1020,23 @@ if (navigator.getGamepads) {
     }
   }, 1000);
 }
+
+// Battery readout (hidden when no pack is detected)
+function pollBattery() {
+  fetch('/api/status').then(r => r.json()).then(d => {
+    const el = document.getElementById('batteryStatus');
+    const b = d.battery;
+    if (!b || !b.present) { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    el.className = 'battery-status' + (b.cutoff ? ' cutoff' : (b.low ? ' low' : ''));
+    let text = 'Battery: ' + b.voltage.toFixed(2) + ' V (' + b.percent + '%)';
+    if (b.cutoff) text += ' — CUTOFF, recharge and reboot';
+    else if (b.low) text += ' — LOW';
+    el.textContent = text;
+  }).catch(console.log);
+}
+pollBattery();
+setInterval(pollBattery, 5000);
 </script>
 </body>
 </html>
